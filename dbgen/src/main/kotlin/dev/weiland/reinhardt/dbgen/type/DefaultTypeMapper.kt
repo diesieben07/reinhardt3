@@ -10,17 +10,17 @@ import java.sql.JDBCType
 
 class DefaultTypeMapper : TypeMapper {
 
-    private val typeGroupMapping: Map<JavaSqlTypeGroup, CodegenType> = mapOf(
-        JavaSqlTypeGroup.character to StringType.forCodegen()
+    private val typeGroupMapping: Map<JavaSqlTypeGroup, SimpleColumnType> = mapOf(
+        JavaSqlTypeGroup.character to StringType.codegenType()
     )
 
     private val jdbcTypeMapping = mapOf(
-        JDBCType.TINYINT to IntType.forCodegen(),
-        JDBCType.SMALLINT to IntType.forCodegen(),
-        JDBCType.INTEGER to IntType.forCodegen()
+        JDBCType.TINYINT to IntType.codegenType(),
+        JDBCType.SMALLINT to IntType.codegenType(),
+        JDBCType.INTEGER to IntType.codegenType()
     )
 
-    override fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): CodegenType? {
+    override fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): SimpleColumnType? {
         val typeGroup = JavaSqlTypeGroup.valueOf(type.javaSqlType.vendorTypeNumber)
         val typeGroupResult = typeGroupMapping[typeGroup]
         if (typeGroupResult != null) {

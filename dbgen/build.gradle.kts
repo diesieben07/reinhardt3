@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    idea
 }
 
 group = "dev.weiland.reinhardt"
@@ -15,6 +16,19 @@ kotlin {
             languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
             languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
         }
+        main {
+            resources.srcDir("src/main/generated")
+
+            println(resources.sourceDirectories.files.map { it.absoluteFile })
+        }
+    }
+}
+
+
+idea {
+    module {
+        sourceDirs = sourceDirs + project.file("src/main/generated")
+        generatedSourceDirs = generatedSourceDirs + project.file("src/main/generated")
     }
 }
 

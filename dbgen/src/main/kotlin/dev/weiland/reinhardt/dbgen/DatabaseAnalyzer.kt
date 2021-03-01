@@ -2,7 +2,7 @@ package dev.weiland.reinhardt.dbgen
 
 import com.squareup.kotlinpoet.FileSpec
 import dev.weiland.reinhardt.dbgen.analyze.SqlDialect
-import dev.weiland.reinhardt.dbgen.codegen.CodegenContext
+import dev.weiland.reinhardt.dbgen.codegen.ctx.CodegenContextImpl
 import dev.weiland.reinhardt.dbgen.codegen.EntityGenerator
 import dev.weiland.reinhardt.dbgen.type.RootTypeMapper
 import dev.weiland.reinhardt.dbgen.type.TypeMapper
@@ -43,7 +43,7 @@ class DatabaseAnalyzer(
 
         val catalog = SchemaCrawlerUtility.getCatalog(connection, sco)
 
-        val ctx = CodegenContext(catalog, typeMapper, DefaultNameTransformer())
+        val ctx = CodegenContextImpl(catalog, typeMapper, DefaultNameTransformer())
         val gen = EntityGenerator(ctx)
 
         for (table in catalog.tables.filter { it.name == "test_table" }) {
@@ -61,7 +61,7 @@ class DatabaseAnalyzer(
             println()
         }
 
-        fileBuilder.build().writeTo(Paths.get("."))
+        fileBuilder.build().writeTo(Paths.get("dbgen/src/main/generated"))
     }
 
     override fun close() {

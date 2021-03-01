@@ -6,6 +6,6 @@ import schemacrawler.schema.ColumnDataType
 
 interface TypeMapper {
 
-    fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): CodegenType?
+    fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): SimpleColumnType?
 
 }

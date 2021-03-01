@@ -43,7 +43,7 @@ class PostgresqlTypeMapper(private val analyzer: DatabaseAnalyzer) : TypeMapper 
 //        return pgConnection.typeInfo.getPGArrayElement(typeOid)
 //    }
 
-    override fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): CodegenType? {
+    override fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): SimpleColumnType? {
         return if (type.javaSqlType.vendorTypeNumber == Types.ARRAY) {
             val elementTypeName = column.lookupAttribute<String>("PG_EXTRA_ARRAY_ELEM_NAME").orElse(null)
             requireNotNull(elementTypeName) { "Could not find element type name for array column $column" }
@@ -65,7 +65,7 @@ class PostgresqlTypeMapper(private val analyzer: DatabaseAnalyzer) : TypeMapper 
                 val listType = List::class.createType(
                     arguments = listOf(KTypeProjection.invariant(resultType.kotlinType))
                 )
-                resultType = CodegenType(
+                resultType = SimpleColumnType(
                     ArrayType(resultType.columnType),
                     listType
                 )

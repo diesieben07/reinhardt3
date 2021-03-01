@@ -8,13 +8,13 @@ class RootTypeMapper(private val delegates: List<TypeMapper>) : TypeMapper {
 
     constructor(vararg delegates: TypeMapper): this(delegates.asList())
 
-    fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType): CodegenType {
+    fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType): SimpleColumnType {
         return requireNotNull(getColumnType(catalog, column, type, this)) {
             "Failed to find a ColumnType for column $column"
         }
     }
 
-    override fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): CodegenType? {
+    override fun getColumnType(catalog: Catalog, column: Column, type: ColumnDataType, root: RootTypeMapper): SimpleColumnType? {
         require(root === this) { "Invalid root TypeMapper given" }
         for (delegate in delegates) {
             val result = delegate.getColumnType(catalog, column, type, this)

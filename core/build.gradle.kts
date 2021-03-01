@@ -10,12 +10,13 @@ repositories {
 }
 
 kotlin {
-    explicitApi()
+//    explicitApi()
 
     jvm() {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
+                useIR = true
                 freeCompilerArgs = listOf("-Xjvm-default=all")
             }
         }
@@ -30,6 +31,12 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+                implementation(kotlin("reflect"))
+                implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.2.0")
             }
         }
     }

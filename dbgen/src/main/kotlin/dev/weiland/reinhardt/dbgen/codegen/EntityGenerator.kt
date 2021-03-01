@@ -2,31 +2,40 @@ package dev.weiland.reinhardt.dbgen.codegen
 
 import com.squareup.kotlinpoet.*
 import dev.weiland.reinhardt.ResultRow
-import dev.weiland.reinhardt.dbgen.type.CodegenType
-import dev.weiland.reinhardt.type.ColumnType
+import dev.weiland.reinhardt.dbgen.codegen.ctx.CodegenContextImpl
+import dev.weiland.reinhardt.dbgen.codegen.ctx.EntityGenContext
+import dev.weiland.reinhardt.dbgen.type.SimpleColumnType
 import schemacrawler.schema.Column
 import schemacrawler.schema.Table
 
-class EntityGenerator(private val ctx: CodegenContext) {
+class EntityGenerator(private val ctx: CodegenContextImpl) {
 
     private companion object {
         val RESULT_ROW_PARAM_NAME = "row"
     }
 
-    fun generate(table: Table): TypeSpec {
-        return TypeSpec.interfaceBuilder(ctx.nameTransformer.getTableName(table)).let { builder ->
-            for (column in table.columns) {
-                builder.addProperty(generateColumnProperty(column))
-            }
-            builder.build()
-        }
+    fun generate(table: Table, packageName: String): TypeSpec {
+        val entityClassName = ClassName(packageName, ctx.nameTransformer.getTableName(table))
+        val companionObjectName = entityClassName.nestedClass("Companion")
+        val context = EntityGenContext(
+            table = table,
+            entityClassName = entityClassName,
+            companionObjectName = companionObjectName
+        )
+        return generateImpl(context)
+//        return TypeSpec.interfaceBuilder(entityClassName).let { builder ->
+//            for (column in table.columns) {
+//                builder.addProperty(generateColumnProperty(column))
+//            }
+//            builder.build()
+//        }
     }
 
-    fun generateImpl(table: Table): TypeSpec {
-        val classBuilder = TypeSpec.classBuilder(ctx.nameTransformer.getTableName(table))
+    fun generateImpl(ctx: EntityGenContext): TypeSpec {
+        val classBuilder = TypeSpec.classBuilder(ctx.entityClassName)
         val primaryConstructorBuilder = FunSpec.constructorBuilder()
         val secondaryConstructorCallArgs = mutableListOf<CodeBlock>()
-        for (column in table.columns) {
+        for (column in ctx.table.columns) {
             val name = ctx.nameTransformer.getColumnName(column)
             val type = ctx.typeMapper.getColumnType(ctx.catalog, column, column.columnDataType)
             primaryConstructorBuilder.addParameter(generateClassPrimaryConstructorParameter(column, name, type))
@@ -47,20 +56,20 @@ class EntityGenerator(private val ctx: CodegenContext) {
         return classBuilder.build()
     }
 
-    private fun generateClassPrimaryConstructorParameter(column: Column, name: String, type: CodegenType): ParameterSpec {
-        return ParameterSpec.builder(name, type.kotlinType.asTypeName()).build()
+    private fun generateClassPrimaryConstructorParameter(column: Column, name: String, type: SimpleColumnType): ParameterSpec {
+        return ParameterSpec.builder(name, type.runtimeType.asTypeName()).build()
     }
 
-    private fun generateClassProperty(column: Column, name: String, type: CodegenType): PropertySpec {
-        return PropertySpec.builder(name, type.kotlinType.asTypeName())
+    private fun generateClassProperty(column: Column, name: String, type: SimpleColumnType): PropertySpec {
+        return PropertySpec.builder(name, type.runtimeType.asTypeName())
             .initializer("%N", name)
             .build()
     }
 
-    private fun generateClassRowConstructorCallArg(column: Column, name: String, type: CodegenType): CodeBlock {
+    private fun generateClassRowConstructorCallArg(column: Column, name: String, type: SimpleColumnType): CodeBlock {
         return CodeBlock.builder()
             .add(type.getInitializer())
-            .add(".%M(%N, %S)", MemberName(ColumnType::class.asClassName(), "get"), RESULT_ROW_PARAM_NAME, name)
+            .add(".get(%N, %S)", RESULT_ROW_PARAM_NAME, name)
             .build()
     }
 

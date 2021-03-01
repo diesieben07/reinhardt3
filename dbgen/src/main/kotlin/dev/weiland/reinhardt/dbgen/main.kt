@@ -1,20 +1,10 @@
 package dev.weiland.reinhardt.dbgen
 
-import com.squareup.kotlinpoet.FileSpec
 import dev.weiland.reinhardt.dbgen.analyze.PostgresqlDialect
-import dev.weiland.reinhardt.dbgen.codegen.CodegenContext
-import dev.weiland.reinhardt.dbgen.codegen.EntityGenerator
 import dev.weiland.reinhardt.dbgen.type.DefaultTypeMapper
 import dev.weiland.reinhardt.dbgen.type.PostgresqlTypeMapper
-import dev.weiland.reinhardt.dbgen.type.RootTypeMapper
 import dev.weiland.reinhardt.dbgen.type.TypeMapper
 import org.postgresql.ds.PGSimpleDataSource
-import schemacrawler.schemacrawler.SchemaCrawlerOptionsBuilder
-import schemacrawler.utility.SchemaCrawlerUtility
-import java.nio.file.Paths
-import java.sql.JDBCType
-import java.util.*
-import kotlin.system.exitProcess
 
 fun main() {
     val dataSource = PGSimpleDataSource().apply {
