@@ -1,5 +1,13 @@
 package dev.weiland.reinhardt
 
+import java.lang.UnsupportedOperationException
+import java.lang.annotation.Inherited
+
+@Inherited
+@Retention(AnnotationRetention.BINARY)
+@Target(AnnotationTarget.CLASS)
+annotation class ModelAnnotation
+
 interface Database {
 
     fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF>
@@ -44,7 +52,7 @@ class ModelQuerySetImpl<M : Model, ME : Any, REF : ModelRef<M, ME>>(
     }
 
     override fun filter(filter: (REF) -> Expr<Boolean>): ModelQuerySet<M, ME, REF> {
-        return ModelQuerySetImpl(ref, filter=filter(ref))
+        return ModelQuerySetImpl(ref, filter = filter(ref))
     }
 
     override fun toString(): String {
@@ -58,6 +66,7 @@ interface BaseModel {
 
 }
 
+@ModelAnnotation
 abstract class Model : BaseModel {
     override fun toString(): String {
         return "Model(${this::class.simpleName ?: "<anonymous>"})"
@@ -105,15 +114,16 @@ abstract class ModelRef<M : Model, ME : Any>(private val through: FieldRef<*>? =
 }
 
 // fields
-interface Field {
+abstract class Field<T> {
+}
+
+class TextField : Field<String>() {
+
+    class NestedFieldClass : Field<String>() {}
 
 }
 
-class TextField : Field {
-
-}
-
-class ForeignKey<M : Model>(val reference: M) : Field {
+class ForeignKey<M : Model>(val reference: M) : Field<M>() {
 
 }
 
