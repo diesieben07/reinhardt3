@@ -114,16 +114,21 @@ abstract class ModelRef<M : Model, ME : Any>(private val through: FieldRef<*>? =
 }
 
 // fields
-abstract class Field<T> {
+sealed class Field
+
+fun <F : Field> F.nullable(): NullableField<F> = NullableField(this)
+
+abstract class RelationField<M : Model>(val referencedModel: M) : Field()
+abstract class SimpleField<T> : Field()
+class NullableField<F : Field>(val delegate: F) : Field()
+
+class TextField : SimpleField<String>() {
+
 }
 
-class TextField : Field<String>() {
+class HulloField<T> : SimpleField<T>()
 
-    class NestedFieldClass : Field<String>() {}
-
-}
-
-class ForeignKey<M : Model>(val reference: M) : Field<M>() {
+class ForeignKey<M : Model>(referencedModel: M) : RelationField<M>(referencedModel) {
 
 }
 

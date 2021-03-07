@@ -1,19 +1,15 @@
 package dev.weiland.reinhardt.processor
 
+import com.squareup.kotlinpoet.ClassName
 import io.github.encryptorcode.pluralize.Pluralize
-import kotlinx.metadata.ClassName
-import kotlinx.metadata.jvm.JvmMethodSignature
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
-import org.atteo.evo.inflector.English
 import javax.lang.model.element.AnnotationMirror
 import javax.lang.model.element.AnnotationValue
-import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
-import javax.lang.model.type.*
-import javax.lang.model.util.Elements
 
 internal typealias AsmType = org.objectweb.asm.Type
+internal typealias KmClassName = kotlinx.metadata.ClassName
 
 internal fun AnnotationValue.unpack(): Any? {
     val value = value
@@ -52,15 +48,13 @@ internal fun AsmType.fixedElementType(): AsmType {
     return AsmType.getType(descriptor.substring(1))
 }
 
-internal val ClassName.packageName: String
-    get() {
-        return substringBeforeLast('/', missingDelimiterValue = "").replace('/', '.')
+internal fun ClassName.toKmClassName(): KmClassName {
+    return buildString {
+        append(packageName.replace('.', '/'))
+        if (packageName.isNotEmpty()) append('/')
+        simpleNames.joinTo(this, separator = "$")
     }
-
-internal val ClassName.className: String
-    get() {
-        return substringAfterLast('/')
-    }
+}
 
 fun String.pluralizeEnglish(): String {
     return Pluralize.pluralize(this)

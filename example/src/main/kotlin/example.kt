@@ -5,8 +5,9 @@ import dev.weiland.reinhardt.*
 object Person : Model() {
 
     val name = TextField()
-//    val parent = ForeignKey(Person)
-    val foo = TextField.NestedFieldClass()
+    val test = HulloField<Int>()
+    val nullableString = TextField().nullable()
+    val parent = ForeignKey(Person)
 
     fun getFoo() {
 
@@ -20,7 +21,6 @@ object User : Model() {
 }
 
 fun main() {
-
     val qs = db.people.filter { it.name eq "Hello" }
     println(qs)
     for (person in qs) {
