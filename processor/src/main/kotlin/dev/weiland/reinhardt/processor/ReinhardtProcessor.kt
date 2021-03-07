@@ -9,21 +9,12 @@ import com.squareup.kotlinpoet.metadata.*
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.classFor
 import com.squareup.kotlinpoet.metadata.specs.internal.ClassInspectorUtil
-import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import kotlinx.metadata.*
-import kotlinx.metadata.jvm.JvmMethodSignature
-import kotlinx.metadata.jvm.KotlinClassMetadata
-import kotlinx.metadata.jvm.getterSignature
 import java.nio.file.Path
 import java.nio.file.Paths
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
-import javax.lang.model.type.ArrayType
-import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.TypeKind
-import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import javax.tools.Diagnostic
@@ -37,9 +28,23 @@ private const val MODEL_PACKAGE = "dev.weiland.reinhardt"
 private val MODEL_REF_CLASS_NAME = ClassName(MODEL_PACKAGE, "ModelRef")
 private val MODEL_REF_MODEL_FUN = "model"
 
+private val FIELD_REF_CLASS_NAME = ClassName(MODEL_PACKAGE, "FieldRef")
+
 private val FIELD_CLASS_NAME = ClassName(MODEL_PACKAGE, "Field")
 private val FIELD_CLASS_NAME_KM: String = FIELD_CLASS_NAME.reflectionName()
-private val FIELD_TYPE_CAPTURE_METHOD: String = "hackCaptureType"
+
+private val DATABASE_CLASS_NAME = ClassName(MODEL_PACKAGE, "Database")
+private val DATABASE_ALL_METHOD_NAME = "all"
+private val ITERABLE = ClassName("kotlin.collections", "Iterable")
+
+private val MODEL_QUERYSET_CLASS_NAME = ClassName(MODEL_PACKAGE, "ModelQuerySet")
+private val MODEL_REF_DEFAULT_PROPERTY_NAME = "rootRef"
+
+private val DB_ROW_CLASS_NAME = ClassName(MODEL_PACKAGE, "DbRow")
+private val MODEL_READER_CLASS_NAME = ClassName(MODEL_PACKAGE, "ModelReader")
+private val MODEL_READER_READ_ENTITY_FUN = "readEntity"
+private val MODEL_READER_READ_ENTITY_FUN_ROW_PARAM = "row"
+
 
 @SupportedAnnotationTypes(MODEL_ANNOTATION)
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -86,50 +91,107 @@ class ReinhardtProcessor : AbstractProcessor() {
         return true
     }
 
-    private fun processModel(modelClass: TypeElement) {
-        val info = classInfo(modelClass)
-        if (info.km.name.isLocal) {
-            throw IllegalArgumentException("Model class ${info.km} must not be a local class")
+    private fun processModel(typeElement: TypeElement) {
+        val modelClass = classInfo(typeElement)
+        if (modelClass.km.name.isLocal) {
+            throw IllegalArgumentException("Model class ${modelClass.km} must not be a local class")
         }
-        println("model: ${info.km.name} has props: ${info.km.properties.map { it.name }}")
-        val refClass = createRefClass(info)
-        val fileSpec = FileSpec.builder(info.className.packageName, "${info.className.simpleNames.joinToString("_")}__reinhard_generated")
+        println("model: ${modelClass.km.name} has props: ${modelClass.km.properties.map { it.name }}")
+        val refClass = createRefClass(modelClass)
+        val entityInterface = createEntityType(modelClass, EntityClassType.INTERFACE)
+        val entityDataClass = createEntityType(modelClass, EntityClassType.DATA_CLASS)
+        val readerClass = createModelReader(modelClass)
+        val dbExtension = createDbExtension(modelClass)
+        val fileSpec = FileSpec.builder(modelClass.className.packageName, "${modelClass.className.simpleNames.joinToString("_")}__reinhard_generated")
+            .addType(entityInterface)
+            .addType(entityDataClass)
             .addType(refClass)
+            .addType(readerClass)
+            .addProperty(dbExtension)
             .build()
         fileSpec.writeTo(outputDir)
     }
 
-    private fun classInfo(te: TypeElement): ClassInfo {
-        val metadata = te.readMetadata() ?: throw IllegalArgumentException("Kotlin Metadata missing for $te")
-        if (metadata !is KotlinClassMetadata.Class) throw IllegalArgumentException("Kotlin Metadata for $te says its not a class")
-        val kmClass = metadata.toKmClass()
-        return ClassInfo(te, kmClass)
+    private fun classInfo(te: TypeElement): ModelClassInfo {
+        return ModelClassInfo(te)
     }
 
-    inner class ClassInfo(val te: TypeElement, val km: KmClass) {
+    internal inner class ModelClassInfo(val te: TypeElement) {
 
-        val className: ClassName by lazy {
-            if (km.name.isLocal) {
-                throw IllegalArgumentException("No ClassName for local classes")
-            }
-            ClassName(km.name.packageName, km.name.className.split('.'))
+        val km: ImmutableKmClass by lazy {
+            te.toImmutableKmClass()
         }
 
-//        val fieldProperties: List<ModelFieldInfo> by lazy {
-//            km.properties.mapNotNull { prop ->
-//                modelFieldInfo(this@ClassInfo, prop)
-//            }
-//        }
+        val className: ClassName by lazy {
+            ClassInspectorUtil.createClassName(km.name)
+        }
+
+        val dbExtensionName: String by lazy {
+            className.simpleNames.last().decapitalize().pluralizeEnglish()
+        }
+
+        private fun derivedClassName(prefix: String = "", postfix: String = ""): ClassName {
+            return className.peerClass(className.simpleNames.joinToString(separator = "_", prefix = prefix, postfix = postfix))
+        }
+
+        val refClassName: ClassName by lazy {
+            derivedClassName("Ref")
+        }
+
+        fun entityClassName(type: EntityClassType): ClassName {
+            return when (type) {
+                EntityClassType.INTERFACE -> entityInterfaceName
+                EntityClassType.DATA_CLASS -> entityDataClassName
+            }
+        }
+
+        val entityInterfaceName: ClassName by lazy {
+            derivedClassName(prefix = "E")
+        }
+
+        val entityDataClassName: ClassName by lazy {
+            derivedClassName(prefix = "D")
+        }
+
+        val readerClassName: ClassName by lazy {
+            derivedClassName(postfix = "Reader")
+        }
+
+        val fieldProperties: List<ModelFieldInfo> by lazy {
+            km.properties.mapNotNull { prop ->
+                modelFieldInfo(prop)
+            }
+        }
     }
 
-    private fun createRefClass(modelClass: ClassInfo): TypeSpec {
-        val refName = ClassName(modelClass.className.packageName, modelClass.className.simpleNames.joinToString("_", postfix = "Ref"))
+    private fun createDbExtension(modelClass: ModelClassInfo): PropertySpec {
+        val querySetType = MODEL_QUERYSET_CLASS_NAME.parameterizedBy(
+            modelClass.className,
+            modelClass.entityInterfaceName,
+            modelClass.refClassName
+        )
+        return PropertySpec.builder(modelClass.dbExtensionName, querySetType)
+            .receiver(DATABASE_CLASS_NAME)
+            .getter(
+                FunSpec.getterBuilder()
+                    .addCode(
+                        "return this.%N(%M, %T)",
+                        DATABASE_ALL_METHOD_NAME,
+                        MemberName(modelClass.refClassName.nestedClass("Companion"), MODEL_REF_DEFAULT_PROPERTY_NAME),
+                        modelClass.readerClassName
+                    )
+                    .build()
+            )
+            .build()
+    }
+
+    private fun createRefClass(modelClass: ModelClassInfo): TypeSpec {
         val superclass = MODEL_REF_CLASS_NAME.parameterizedBy(
             modelClass.className,
-            ClassName("kotlin", "Any")
+            modelClass.entityInterfaceName
         )
 
-        val classBuilder = TypeSpec.classBuilder(refName)
+        val classBuilder = TypeSpec.classBuilder(modelClass.refClassName)
         classBuilder
             .superclass(superclass)
             .addFunction(
@@ -140,21 +202,90 @@ class ReinhardtProcessor : AbstractProcessor() {
                     .build()
             )
 
-        val kmClass = modelClass.te.toImmutableKmClass()
-        val kmClassSpec = kmClass.toTypeSpec(inspector)
-        for (property in kmClass.properties) {
-            val fieldType = resolveFieldType(property) ?: continue
+        for (property in modelClass.fieldProperties) {
+            val fieldRefType = FIELD_REF_CLASS_NAME.parameterizedBy(property.fieldContentType)
+
             classBuilder.addProperty(
-                PropertySpec.builder(property.name, fieldType)
-                    .initializer("%M()", MemberName("kotlin", "TODO"))
+                PropertySpec.builder(property.km.name, fieldRefType)
+                    .initializer("%T(this, %S)", FIELD_REF_CLASS_NAME, property.km.name)
                     .build()
             )
             println("PROPERTY ${property} with type ${fieldType}")
         }
 
+        val companionObject = TypeSpec.companionObjectBuilder()
+            .addProperty(
+                PropertySpec.builder(MODEL_REF_DEFAULT_PROPERTY_NAME, modelClass.refClassName)
+                    .delegate("%M { %T() }", MemberName("kotlin", "lazy"), modelClass.refClassName)
+                    .build()
+            )
+            .build()
+
+        classBuilder.addType(companionObject)
 
         return classBuilder.build()
     }
+
+    internal enum class EntityClassType {
+        INTERFACE,
+        DATA_CLASS;
+
+        fun createBuilder(name: ClassName): TypeSpec.Builder {
+            return when (this) {
+                INTERFACE -> TypeSpec.interfaceBuilder(name)
+                DATA_CLASS -> TypeSpec.classBuilder(name).addModifiers(KModifier.DATA)
+            }
+        }
+    }
+
+    private fun createEntityType(modelClass: ModelClassInfo, type: EntityClassType): TypeSpec {
+        return type.createBuilder(modelClass.entityClassName(type)).also { classBuilder ->
+            if (type == EntityClassType.DATA_CLASS) {
+                classBuilder.addSuperinterface(modelClass.entityInterfaceName)
+            }
+            val constructorBuilder = FunSpec.constructorBuilder()
+            for (property in modelClass.fieldProperties) {
+                classBuilder.addProperty(
+                    PropertySpec.builder(property.km.name, property.fieldContentType)
+                        .apply {
+                            if (type == EntityClassType.DATA_CLASS) {
+                                initializer("%N", property.km.name)
+                                addModifiers(KModifier.OVERRIDE)
+                            }
+                        }
+                        .build()
+                )
+                constructorBuilder.addParameter(property.km.name, property.fieldContentType)
+            }
+            if (type == EntityClassType.DATA_CLASS) {
+                classBuilder.primaryConstructor(constructorBuilder.build())
+            }
+        }.build()
+    }
+
+    private fun createModelReader(model: ModelClassInfo): TypeSpec {
+        val superType = MODEL_READER_CLASS_NAME.parameterizedBy(
+            model.className, model.entityInterfaceName
+        )
+        return TypeSpec.objectBuilder(model.readerClassName)
+            .addSuperinterface(superType)
+            .addFunction(
+                FunSpec.builder(MODEL_READER_READ_ENTITY_FUN)
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addParameter(ParameterSpec(MODEL_READER_READ_ENTITY_FUN_ROW_PARAM, DB_ROW_CLASS_NAME))
+                    .returns(model.entityInterfaceName)
+                    .addCode("return %M()", MemberName("kotlin", "TODO"))
+                    .build()
+            )
+            .build()
+    }
+
+    internal fun modelFieldInfo(property: ImmutableKmProperty): ModelFieldInfo? {
+        val fieldContentType = resolveFieldType(property) ?: return null
+        return ModelFieldInfo(property, fieldContentType)
+    }
+
+    inner class ModelFieldInfo(val km: ImmutableKmProperty, val fieldContentType: TypeName)
 
     internal fun resolveFieldType(property: ImmutableKmProperty): TypeName? {
         val classifier = doResolveFieldType(property.returnType)?.classifier as KmClassifier.Class? ?: return null
@@ -189,81 +320,6 @@ class ReinhardtProcessor : AbstractProcessor() {
             is KmClassifier.TypeAlias -> TODO()
         }
 
-    }
-
-//    internal fun modelFieldInfo(cls: ClassInfo, property: KmProperty): ModelFieldInfo? {
-//        val getterSignature = property.getterSignature ?: return null
-//        val executableElement = cls.te.findMethodBySignature(getterSignature) ?: return null
-//        val fieldContentType = findFieldContentType(executableElement) ?: return null
-//        return ModelFieldInfo(property, executableElement, fieldContentType)
-//    }
-
-    inner class ModelFieldInfo(val km: KmProperty, val ee: ExecutableElement, val fieldType: KmType)
-
-//    private fun findFieldContentType(ee: ExecutableElement): KmType? {
-//        val fieldSupertype = ee.returnType.findTypedSuperclass(fieldElement) ?: return null
-//        return when (fieldSupertype.classifier) {
-//            // TODO: Variance?
-//            is KmClassifier.Class -> fieldSupertype.arguments.singleOrNull()?.type ?: error("Got invalid field superclass $fieldSupertype")
-//            else -> error("Field supertype is a not a class?")
-//        }
-//    }
-
-    private fun TypeMirror.matchesAsmType(asmType: AsmType): Boolean {
-        require(asmType.sort != AsmType.METHOD) { "Must not be a method type" }
-        val erasure = processingEnv.typeUtils.erasure(this)
-        println("checking types: ${this} -> ${erasure} with ${asmType}")
-        return when (erasure.kind) {
-            TypeKind.BOOLEAN -> asmType.sort == AsmType.BOOLEAN
-            TypeKind.BYTE -> asmType.sort == AsmType.BYTE
-            TypeKind.SHORT -> asmType.sort == AsmType.SHORT
-            TypeKind.INT -> asmType.sort == AsmType.INT
-            TypeKind.LONG -> asmType.sort == AsmType.LONG
-            TypeKind.FLOAT -> asmType.sort == AsmType.FLOAT
-            TypeKind.DOUBLE -> asmType.sort == AsmType.DOUBLE
-            TypeKind.CHAR -> asmType.sort == AsmType.CHAR
-            TypeKind.VOID -> asmType.sort == AsmType.VOID
-            TypeKind.ARRAY -> {
-                asmType.sort == AsmType.ARRAY && (erasure as ArrayType).componentType.matchesAsmType(asmType.fixedElementType())
-            }
-            TypeKind.DECLARED -> {
-                asmType.sort == AsmType.OBJECT && run {
-                    val element = (erasure as DeclaredType).asElement() as? TypeElement
-                    println("found element ${element} with binaryName ${processingEnv.elementUtils.getBinaryName(element)} for declared type ${erasure}")
-                    element != null && processingEnv.elementUtils.getBinaryName(element).contentEquals(asmType.className)
-                }
-            }
-            TypeKind.NONE -> TODO()
-            TypeKind.NULL -> TODO()
-            TypeKind.ERROR -> TODO()
-            TypeKind.TYPEVAR -> TODO()
-            TypeKind.WILDCARD -> TODO()
-            TypeKind.PACKAGE -> TODO()
-            TypeKind.EXECUTABLE -> TODO()
-            TypeKind.OTHER -> TODO()
-            TypeKind.UNION -> TODO()
-            TypeKind.INTERSECTION -> TODO()
-            TypeKind.MODULE -> TODO()
-            null -> TODO()
-        }
-    }
-
-    private fun TypeElement.findMethodBySignature(signature: JvmMethodSignature): ExecutableElement? {
-        val asmType = AsmType.getMethodType(signature.desc)
-        val methods = enclosedElements.asSequence().filterIsInstance<ExecutableElement>()
-            .map { it to it.returnType }
-            .toList()
-        println("trying to find ${signature}: ${methods}")
-        return enclosedElements.asSequence().filterIsInstance<ExecutableElement>()
-            .filter { it.simpleName.contentEquals(signature.name) }
-            .filter { it.returnType.matchesAsmType(asmType.returnType) }
-            .filter {
-                val asmArgs = asmType.argumentTypes
-                it.parameters.size == asmArgs.size && it.parameters.withIndex().all { (i, p) ->
-                    p.asType().matchesAsmType(asmArgs[i])
-                }
-            }
-            .singleOrNull()
     }
 
     private fun ImmutableKmType.asSuper(cls: ClassName): ImmutableKmType? {

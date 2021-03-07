@@ -4,6 +4,7 @@ import kotlinx.metadata.ClassName
 import kotlinx.metadata.jvm.JvmMethodSignature
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
+import org.atteo.evo.inflector.English
 import javax.lang.model.element.AnnotationMirror
 import javax.lang.model.element.AnnotationValue
 import javax.lang.model.element.ExecutableElement
@@ -59,3 +60,8 @@ internal val ClassName.className: String
     get() {
         return substringAfterLast('/')
     }
+
+fun String.pluralizeEnglish(): String = when (this) {
+    "person" -> "people"
+    else -> English.plural(this)
+}

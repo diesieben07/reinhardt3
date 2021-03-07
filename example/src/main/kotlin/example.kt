@@ -1,8 +1,6 @@
 package dev.weiland.reinhardt.example
 
-import dev.weiland.reinhardt.ForeignKey
-import dev.weiland.reinhardt.Model
-import dev.weiland.reinhardt.TextField
+import dev.weiland.reinhardt.*
 
 object Person : Model() {
 
@@ -16,10 +14,16 @@ object Person : Model() {
 
 }
 
+object User : Model() {
+    val id = TextField()
+    val name = TextField()
+}
+
 fun main() {
-//    val qs = db.people.filter { it.parent.name eq "Hello" }
-//    println(qs)
-//    for (person in qs) {
-//        println(person)
-//    }
+
+    val qs = db.people.filter { it.name eq "Hello" }
+    println(qs)
+    for (person in qs) {
+        println(person)
+    }
 }

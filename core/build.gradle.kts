@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    idea
 }
 
 group = "dev.weiland.reinhardt"

@@ -20,6 +20,9 @@ dependencies {
     implementation("com.squareup:kotlinpoet-metadata-specs:1.7.2")
     implementation("com.squareup:kotlinpoet-classinspector-elements:1.7.2")
     implementation("org.ow2.asm:asm:9.1")
+
+    implementation("org.atteo:evo-inflector:1.2.2")
+
     kapt("com.google.auto.service", "auto-service", "1.0-rc7")
 }
 
