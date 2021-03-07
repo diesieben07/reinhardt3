@@ -1,5 +1,6 @@
 package dev.weiland.reinhardt.processor
 
+import io.github.encryptorcode.pluralize.Pluralize
 import kotlinx.metadata.ClassName
 import kotlinx.metadata.jvm.JvmMethodSignature
 import kotlinx.metadata.jvm.KotlinClassHeader
@@ -61,7 +62,6 @@ internal val ClassName.className: String
         return substringAfterLast('/')
     }
 
-fun String.pluralizeEnglish(): String = when (this) {
-    "person" -> "people"
-    else -> English.plural(this)
+fun String.pluralizeEnglish(): String {
+    return Pluralize.pluralize(this)
 }
