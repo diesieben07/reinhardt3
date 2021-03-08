@@ -15,3 +15,7 @@ dependencies {
     implementation(project(":core"))
     kapt(project(":processor"))
 }
+
+kapt {
+    mapDiagnosticLocations = true
+}

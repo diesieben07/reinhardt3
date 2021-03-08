@@ -30,6 +30,7 @@ kotlin {
     target {
         sourceSets.all {
             languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
+            languageSettings.useExperimentalAnnotation("com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview")
         }
     }
 }

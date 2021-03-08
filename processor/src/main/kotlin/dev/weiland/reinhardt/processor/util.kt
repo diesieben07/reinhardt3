@@ -1,12 +1,12 @@
 package dev.weiland.reinhardt.processor
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.metadata.ImmutableKmProperty
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import io.github.encryptorcode.pluralize.Pluralize
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
-import javax.lang.model.element.AnnotationMirror
-import javax.lang.model.element.AnnotationValue
-import javax.lang.model.element.TypeElement
+import javax.lang.model.element.*
 
 internal typealias AsmType = org.objectweb.asm.Type
 internal typealias KmClassName = kotlinx.metadata.ClassName
@@ -58,4 +58,9 @@ internal fun ClassName.toKmClassName(): KmClassName {
 
 fun String.pluralizeEnglish(): String {
     return Pluralize.pluralize(this)
+}
+
+internal fun ImmutableKmProperty.findElement(cls: TypeElement): Element {
+    return cls.enclosedElements.filterIsInstance<ExecutableElement>()
+        .firstOrNull() { it.simpleName.toString() == this.getterSignature?.name } ?: cls
 }

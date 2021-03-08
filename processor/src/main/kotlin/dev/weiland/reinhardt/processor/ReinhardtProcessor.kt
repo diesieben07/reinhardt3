@@ -14,6 +14,9 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
+import javax.lang.model.element.Element
+import javax.lang.model.element.ElementKind
+import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
@@ -100,17 +103,18 @@ class ReinhardtProcessor : AbstractProcessor() {
             .filterIsInstance<TypeElement>()
             .filterNot { it.qualifiedName.contentEquals(MODEL_CLASS) }
         for (modelClass in modelClasses) {
-            processModel(modelClass)
+            if (!processModel(modelClass)) {
+                return false
+            }
         }
         return true
     }
 
-    private fun processModel(typeElement: TypeElement) {
-        val modelClass = classInfo(typeElement)
-        if (modelClass.km.name.isLocal) {
-            throw IllegalArgumentException("Model class ${modelClass.km} must not be a local class")
+    private fun processModel(typeElement: TypeElement): Boolean {
+        val modelClass = ModelClassInfo(typeElement)
+        if (!modelClass.validate()) {
+            return false
         }
-        println("model: ${modelClass.km.name} has props: ${modelClass.km.properties.map { it.name }}")
         val refClass = createRefClass(modelClass)
         val entityInterface = createEntityType(modelClass, EntityClassType.INTERFACE)
         val entityDataClass = createEntityType(modelClass, EntityClassType.DATA_CLASS)
@@ -126,10 +130,7 @@ class ReinhardtProcessor : AbstractProcessor() {
             .addProperty(dbExtension)
             .build()
         fileSpec.writeTo(outputDir)
-    }
-
-    private fun classInfo(te: TypeElement): ModelClassInfo {
-        return ModelClassInfo(te)
+        return true
     }
 
     companion object {
@@ -150,6 +151,30 @@ class ReinhardtProcessor : AbstractProcessor() {
 
         val dbExtensionName: String by lazy {
             className.simpleNames.last().decapitalize().pluralizeEnglish()
+        }
+
+        fun validate(): Boolean {
+            val enclosingElement = te.enclosingElement
+            if (enclosingElement == null) {
+                processingEnv.messager.printMessage(
+                    Diagnostic.Kind.ERROR, "You cannot have a model object here", te
+                )
+                return false
+            }
+            return if (enclosingElement.kind == ElementKind.PACKAGE || enclosingElement.kind == ElementKind.CLASS) {
+                if (!km.isObject) {
+                    processingEnv.messager.printMessage(
+                        Diagnostic.Kind.ERROR, "Models must be objects", te
+                    )
+                }
+                check(!km.name.isLocal) { "Model class name is local unexpectedly"}
+                true
+            } else {
+                processingEnv.messager.printMessage(
+                    Diagnostic.Kind.ERROR, "Model object must be top level or non-inner nested classes", te
+                )
+                false
+            }
         }
 
         private fun derivedClassName(prefix: String = "", postfix: String = ""): ClassName {
@@ -186,7 +211,7 @@ class ReinhardtProcessor : AbstractProcessor() {
 
         val fieldProperties: List<ModelFieldInfo> by lazy {
             km.properties.mapNotNull { prop ->
-                makeModelFieldInfo(prop)
+                makeModelFieldInfo(prop.findElement(te), prop)
             }
         }
     }
@@ -230,7 +255,6 @@ class ReinhardtProcessor : AbstractProcessor() {
             )
 
         for (property in modelClass.fieldProperties) {
-
             val propertySpec = when (property) {
                 is ModelFieldInfo.Simple -> {
                     val fieldRefType = FIELD_REF_CLASS_NAME.parameterizedBy(property.fieldContentType)
@@ -249,7 +273,6 @@ class ReinhardtProcessor : AbstractProcessor() {
             }
 
             classBuilder.addProperty(propertySpec.build())
-            println("PROPERTY ${property} with type ${fieldType}")
         }
 
         val companionObject = TypeSpec.companionObjectBuilder()
@@ -320,6 +343,7 @@ class ReinhardtProcessor : AbstractProcessor() {
                                             .build()
                                     )
                                 }
+                                EntityClassType.INTERFACE -> {}
                             }
                         }
                         .build()
@@ -328,10 +352,8 @@ class ReinhardtProcessor : AbstractProcessor() {
                     constructorBuilder.addParameter(property.km.name, property.entityFieldType)
                 }
             }
-            when (type) {
-                EntityClassType.LAZY_ENTITY, EntityClassType.DATA_CLASS -> {
-                    classBuilder.primaryConstructor(constructorBuilder.build())
-                }
+            if (type == EntityClassType.LAZY_ENTITY || type == EntityClassType.DATA_CLASS) {
+                classBuilder.primaryConstructor(constructorBuilder.build())
             }
         }.build()
     }
@@ -351,11 +373,6 @@ class ReinhardtProcessor : AbstractProcessor() {
                     .build()
             )
             .build()
-    }
-
-    enum class FieldType {
-        SIMPLE,
-        RELATION
     }
 
     sealed class ModelFieldInfo {
@@ -385,8 +402,8 @@ class ReinhardtProcessor : AbstractProcessor() {
 
     }
 
-    internal fun makeModelFieldInfo(property: ImmutableKmProperty, type: ImmutableKmType = property.returnType): ModelFieldInfo? {
-        for (supertype in type.walkSuperClassTypes()) {
+    internal fun makeModelFieldInfo(context: Element, property: ImmutableKmProperty, type: ImmutableKmType = property.returnType): ModelFieldInfo? {
+        for (supertype in type.walkSuperClassTypes(context)) {
             val classifier = supertype.classifier as? KmClassifier.Class ?: continue
             when (classifier.name) {
                 SIMPLE_FIELD_CLASS_NAME_KM -> {
@@ -395,7 +412,7 @@ class ReinhardtProcessor : AbstractProcessor() {
                     }
                 }
                 NULLABLE_FIELD_CLASS_NAME_KM -> {
-                    val nested = makeModelFieldInfo(property, supertype.arguments.single().type ?: return null) ?: return null
+                    val nested = makeModelFieldInfo(context, property, supertype.arguments.single().type ?: return null) ?: return null
                     return nested.makeNullable(true)
                 }
                 RELATION_FIELD_CLASS_NAME_KM -> {
@@ -408,10 +425,6 @@ class ReinhardtProcessor : AbstractProcessor() {
             }
         }
         return null
-//        return type.walkSuperClassTypes().firstOrNull {
-//            (it.classifier as? KmClassifier.Class)?.name == SIMPLE_FIELD_CLASS_NAME_KM
-//        }?.arguments?.single()?.type
-//        return type.asSuper(FIELD_CLASS_NAME)?.arguments?.single()?.type
     }
 
     internal fun ImmutableKmType.makeTypeName(): TypeName {
@@ -422,14 +435,17 @@ class ReinhardtProcessor : AbstractProcessor() {
         return className.copy(nullable = Flag.Type.IS_NULLABLE(flags))
     }
 
-    internal fun ImmutableKmType.walkSuperClassTypes(): Sequence<ImmutableKmType> {
+    internal fun ImmutableKmType.walkSuperClassTypes(context: Element): Sequence<ImmutableKmType> {
         return sequence {
             var current: ImmutableKmType? = this@walkSuperClassTypes
             while (current != null) {
                 yield(current)
                 val currentClassifier = current.classifier
                 // TODO: Support TypeParameters if necessary?
-                require(currentClassifier is KmClassifier.Class) { "TypeParameters not supported here yet" }
+                if (currentClassifier !is KmClassifier.Class) {
+                    processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, "TypeParameters not supported here yet", context)
+                    return@sequence
+                }
                 val currentClass = inspector.classFor(ClassInspectorUtil.createClassName(currentClassifier.name))
                 current = currentClass.superClassType(current.arguments)
             }
@@ -473,81 +489,4 @@ class ReinhardtProcessor : AbstractProcessor() {
             return result.toImmutable()
         }
     }
-
-    internal fun substitutedSuperType(kmType: KmType, parameters: Map<Int, KmType>): KmType {
-        return when (val classifier = kmType.classifier) {
-            is KmClassifier.Class -> {
-                KmType(kmType.flags).also { newType ->
-                    newType.visitClass(classifier.name)
-                    for (arg in kmType.arguments) {
-
-                    }
-                }
-            }
-            is KmClassifier.TypeParameter -> requireNotNull(parameters[classifier.id]) {
-                "TypeParameter $classifier not found"
-            }
-            is KmClassifier.TypeAlias -> TODO()
-        }
-
-    }
-
-    private fun ImmutableKmType.asSuper(cls: ClassName): ImmutableKmType? {
-        try {
-            println("${this} AS SUPER ${cls}")
-            var current = this
-            do {
-                println("current: $current")
-                when (val classifier = current.classifier) {
-                    is KmClassifier.Class -> {
-                        val currentClassName = ClassInspectorUtil.createClassName(classifier.name)
-                        if (currentClassName == cls) {
-                            return current
-                        }
-                    }
-                }
-                current = current.supertype() ?: let {
-                    println("supertype was null")
-                    return null
-                }
-            } while (true)
-        } finally {
-            println()
-            println()
-            println()
-        }
-    }
-
-    private fun ImmutableKmType.supertype(): ImmutableKmType? {
-        return when (val classifier = classifier) {
-            is KmClassifier.Class -> {
-                inspector.classFor(ClassInspectorUtil.createClassName(classifier.name)).superClassType(arguments)
-            }
-            else -> TODO()
-        }
-    }
-
-    private fun ImmutableKmClass.withArgs(flags: Flags, args: List<KmTypeProjection>): KmType {
-        return KmType(flags).also { newType ->
-            newType.classifier = KmClassifier.Class(this.name)
-            newType.arguments.addAll(args)
-        }
-    }
-
-
-//    private fun ImmutableKmClass.superClassType(): ImmutableKmType? {
-//        println("finding superClassType for $this: $supertypes")
-//        return supertypes.find {
-//            (it.classifier as? KmClassifier.Class)?.name?.let { superClassName ->
-//                val superClass = inspector.classFor(
-//                    ClassInspectorUtil.createClassName(superClassName)
-//                )
-//                println("got superclass $superClass for ${it.classifier}")
-//                superClass.isClass
-//            } ?: false
-//        }
-//    }
-
-
 }
-
