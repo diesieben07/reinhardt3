@@ -7,6 +7,7 @@ object Person : Model() {
     val name = TextField()
     val test = HulloField<Int>()
     val nullableString = TextField().nullable()
+    val factory = TextField().nullable()
     val parent = ForeignKey(Person)
 
     fun getFoo() {

@@ -42,6 +42,10 @@ private val RELATION_FIELD_CLASS_NAME_KM: String = RELATION_FIELD_CLASS_NAME.toK
 
 private const val REF_CLASS_POSTFIX = "Ref"
 private const val ENTITY_INTERFACE_PREFIX = "E"
+private const val ENTITY_LAZY_PREFIX = "L"
+
+// this has a silly name to avoid any conflicts
+private const val LAZY_ENTITY_DELEGATE_PROPERTY = "delegate___reinhardt-no-conflict"
 
 private val DATABASE_CLASS_NAME = ClassName(MODEL_PACKAGE, "Database")
 private val DATABASE_ALL_METHOD_NAME = "all"
@@ -110,11 +114,13 @@ class ReinhardtProcessor : AbstractProcessor() {
         val refClass = createRefClass(modelClass)
         val entityInterface = createEntityType(modelClass, EntityClassType.INTERFACE)
         val entityDataClass = createEntityType(modelClass, EntityClassType.DATA_CLASS)
+        val entityLazyClass = createEntityType(modelClass, EntityClassType.LAZY_ENTITY)
         val readerClass = createModelReader(modelClass)
         val dbExtension = createDbExtension(modelClass)
         val fileSpec = FileSpec.builder(modelClass.className.packageName, "${modelClass.className.simpleNames.joinToString("_")}__reinhard_generated")
             .addType(entityInterface)
             .addType(entityDataClass)
+            .addType(entityLazyClass)
             .addType(refClass)
             .addType(readerClass)
             .addProperty(dbExtension)
@@ -158,6 +164,7 @@ class ReinhardtProcessor : AbstractProcessor() {
             return when (type) {
                 EntityClassType.INTERFACE -> entityInterfaceName
                 EntityClassType.DATA_CLASS -> entityDataClassName
+                EntityClassType.LAZY_ENTITY -> entityLazyClassName
             }
         }
 
@@ -167,6 +174,10 @@ class ReinhardtProcessor : AbstractProcessor() {
 
         val entityDataClassName: ClassName by lazy {
             derivedClassName(prefix = "D")
+        }
+
+        val entityLazyClassName: ClassName by lazy {
+            derivedClassName(prefix = ENTITY_LAZY_PREFIX)
         }
 
         val readerClassName: ClassName by lazy {
@@ -256,37 +267,71 @@ class ReinhardtProcessor : AbstractProcessor() {
 
     internal enum class EntityClassType {
         INTERFACE,
-        DATA_CLASS;
+        DATA_CLASS,
+        LAZY_ENTITY;
 
-        fun createBuilder(name: ClassName): TypeSpec.Builder {
+        fun createBuilder(modelClass: ModelClassInfo): TypeSpec.Builder {
+            val className = modelClass.entityClassName(this)
+            val builder = when (this) {
+                INTERFACE -> TypeSpec.interfaceBuilder(className)
+                DATA_CLASS -> TypeSpec.classBuilder(className).addModifiers(KModifier.DATA)
+                LAZY_ENTITY -> TypeSpec.classBuilder(className)
+            }
             return when (this) {
-                INTERFACE -> TypeSpec.interfaceBuilder(name)
-                DATA_CLASS -> TypeSpec.classBuilder(name).addModifiers(KModifier.DATA)
+                DATA_CLASS, LAZY_ENTITY -> {
+                    builder.addSuperinterface(modelClass.entityInterfaceName)
+                }
+                else -> builder
             }
         }
     }
 
     private fun createEntityType(modelClass: ModelClassInfo, type: EntityClassType): TypeSpec {
-        return type.createBuilder(modelClass.entityClassName(type)).also { classBuilder ->
-            if (type == EntityClassType.DATA_CLASS) {
-                classBuilder.addSuperinterface(modelClass.entityInterfaceName)
-            }
+        val entityInterfaceProvider = LambdaTypeName.get(
+            returnType = modelClass.entityInterfaceName
+        )
+        return type.createBuilder(modelClass).also { classBuilder ->
             val constructorBuilder = FunSpec.constructorBuilder()
+
+            if (type == EntityClassType.LAZY_ENTITY) {
+                constructorBuilder.addParameter("factory", entityInterfaceProvider)
+                classBuilder.addProperty(
+                    PropertySpec.builder(LAZY_ENTITY_DELEGATE_PROPERTY, modelClass.entityInterfaceName)
+                        .addModifiers(KModifier.PRIVATE)
+                        .delegate("%M(factory)", MemberName("kotlin", "lazy"))
+                        .build()
+                )
+            }
+
             for (property in modelClass.fieldProperties) {
                 classBuilder.addProperty(
                     PropertySpec.builder(property.km.name, property.entityFieldType)
-                        .apply {
-                            if (type == EntityClassType.DATA_CLASS) {
-                                initializer("%N", property.km.name)
-                                addModifiers(KModifier.OVERRIDE)
+                        .also {
+                            when (type) {
+                                EntityClassType.DATA_CLASS -> {
+                                    it.initializer("%N", property.km.name)
+                                    it.addModifiers(KModifier.OVERRIDE)
+                                }
+                                EntityClassType.LAZY_ENTITY -> {
+                                    it.addModifiers(KModifier.OVERRIDE)
+                                    it.getter(
+                                        FunSpec.getterBuilder()
+                                            .addCode("return %N.%N", LAZY_ENTITY_DELEGATE_PROPERTY, property.km.name)
+                                            .build()
+                                    )
+                                }
                             }
                         }
                         .build()
                 )
-                constructorBuilder.addParameter(property.km.name, property.entityFieldType)
+                if (type == EntityClassType.DATA_CLASS) {
+                    constructorBuilder.addParameter(property.km.name, property.entityFieldType)
+                }
             }
-            if (type == EntityClassType.DATA_CLASS) {
-                classBuilder.primaryConstructor(constructorBuilder.build())
+            when (type) {
+                EntityClassType.LAZY_ENTITY, EntityClassType.DATA_CLASS -> {
+                    classBuilder.primaryConstructor(constructorBuilder.build())
+                }
             }
         }.build()
     }
