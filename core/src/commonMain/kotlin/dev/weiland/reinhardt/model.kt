@@ -39,8 +39,33 @@ interface ModelQuerySet<M : Model, ME : Any, REF : ModelRef<M, ME>> : QuerySet<M
 
     val ref: REF
 
+    @ReinhardtInternalApi
+    fun addPrefetch(ref: ModelRef<*, *>): ModelQuerySet<M, ME, REF>
+
     fun filter(filter: (REF) -> Expr<Boolean>): ModelQuerySet<M, ME, REF>
 
+}
+
+interface PrefetchDsl {
+
+    operator fun ModelRef<*, *>.unaryPlus()
+
+}
+
+@PublishedApi
+internal object PrefetchDslImpl : PrefetchDsl {
+    override fun ModelRef<*, *>.unaryPlus() {
+        TODO("Not yet implemented")
+    }
+
+}
+
+//inline fun <M : Model, ME : Any, REF : ModelRef<M, ME>, Q : ModelQuerySet<M, ME, REF>> Q.prefetch(refs: (REF) -> ModelRef<*, *>): Q {
+//    TODO()
+//}
+
+inline fun <M : Model, ME : Any, REF : ModelRef<M, ME>, Q : ModelQuerySet<M, ME, REF>> Q.prefetch(refs: PrefetchDsl.(REF) -> Unit): Q {
+    TODO()
 }
 
 class ModelQuerySetImpl<M : Model, ME : Any, REF : ModelRef<M, ME>>(
@@ -49,6 +74,11 @@ class ModelQuerySetImpl<M : Model, ME : Any, REF : ModelRef<M, ME>>(
 ) : ModelQuerySet<M, ME, REF> {
     override fun iterator(): Iterator<ME> {
         return iterator { }
+    }
+
+    @ReinhardtInternalApi
+    override fun addPrefetch(ref: ModelRef<*, *>): ModelQuerySet<M, ME, REF> {
+        TODO("Not yet implemented")
     }
 
     override fun filter(filter: (REF) -> Expr<Boolean>): ModelQuerySet<M, ME, REF> {
@@ -119,6 +149,9 @@ sealed class Field
 fun <F : Field> F.nullable(): NullableField<F> = NullableField(this)
 
 abstract class RelationField<M : Model>(val referencedModel: M) : Field()
+
+
+
 abstract class SimpleField<T> : Field()
 class NullableField<F : Field>(val delegate: F) : Field()
 

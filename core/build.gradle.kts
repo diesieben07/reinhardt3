@@ -27,6 +27,7 @@ kotlin {
         all {
             languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
             languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
+            languageSettings.useExperimentalAnnotation("dev.weiland.reinhardt.ReinhardtInternalApi")
         }
 
         val commonMain by getting {
