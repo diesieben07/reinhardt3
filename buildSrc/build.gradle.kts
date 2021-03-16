@@ -1,22 +1,11 @@
 plugins {
-    kotlin("jvm") version "1.4.21"
+    `kotlin-dsl`
 }
 
 repositories {
-    mavenCentral()
+    gradlePluginPortal()
 }
 
 dependencies {
-//    implementation(kotlin("gradle-plugin"))
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.31")
 }
-
-//import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
-//
-//fun KotlinJvmTarget.configureReinhardtJvmSettings() {
-//    compilations.all {
-//        kotlinOptions {
-//            jvmTarget = "1.8"
-//            freeCompilerArgs = kotlin.collections.listOf("-Xjvm-default=all")
-//        }
-//    }
-//}

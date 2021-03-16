@@ -3,7 +3,6 @@ import dev.weiland.reinhardt.build.kotlinPoet
 
 plugins {
     kotlin("jvm")
-    kotlin("kapt")
 }
 
 group = "dev.weiland.reinhardt"
@@ -15,16 +14,13 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":core"))
-    implementation(project(":model-state"))
 
+    implementation(project(":class-names"))
+
+    implementation(kotlinPoet())
+    implementation(kotlinPoet("metadata"))
+    implementation(kotlinPoet("metadata-specs"))
     implementation(kotlinPoet("classinspector-reflective"))
-
-    kapt(project(":processor"))
 }
 
-kapt {
-    mapDiagnosticLocations = true
-}
-
-kotlin.configureKotlinReinhardt(false)
+kotlin.configureKotlinReinhardt()

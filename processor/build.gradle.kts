@@ -1,3 +1,5 @@
+import dev.weiland.reinhardt.build.configureKotlinReinhardt
+
 plugins {
     java
     kotlin("jvm")
@@ -26,11 +28,10 @@ dependencies {
     kapt("com.google.auto.service", "auto-service", "1.0-rc7")
 }
 
+kotlin.configureKotlinReinhardt(isPublic = false)
+
 kotlin {
-    target {
-        sourceSets.all {
-            languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
-            languageSettings.useExperimentalAnnotation("com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview")
-        }
+    sourceSets.all {
+        languageSettings.useExperimentalAnnotation("com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview")
     }
 }

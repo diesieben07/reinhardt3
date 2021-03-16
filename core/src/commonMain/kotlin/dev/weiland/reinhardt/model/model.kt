@@ -1,5 +1,6 @@
-package dev.weiland.reinhardt
+package dev.weiland.reinhardt.model
 
+import dev.weiland.reinhardt.ReinhardtInternalApi
 import java.lang.UnsupportedOperationException
 import java.lang.annotation.Inherited
 
