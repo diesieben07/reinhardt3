@@ -31,7 +31,6 @@ object User : Model() {
 @KotlinPoetMetadataPreview
 fun main() {
     val classInspector = ReflectiveClassInspector.create()
-    val fieldTypeResolver = ClassInspectorFieldTypeResolver(classInspector)
-    val typeSpec = classInspector.classFor(Person::class.asClassName()).toTypeSpec(classInspector)
-    println(ModelState.of(typeSpec, fieldTypeResolver))
+    val className = Person::class.asClassName()
+    println(ModelState.of(className, classInspector))
 }

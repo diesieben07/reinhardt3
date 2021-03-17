@@ -1,17 +1,30 @@
 package dev.weiland.reinhardt.model.state
 
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.metadata.ImmutableKmClass
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.specs.ClassInspector
+import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
+import dev.weiland.reinhardt.constants.KnownNames
 
 public data class ModelState(
-    public val name: String,
+    public val name: ClassName,
     public val field: List<FieldState>
 ) {
 
     public companion object {
 
-        public fun of(typeSpec: TypeSpec, fieldTypeResolver: FieldTypeResolver): ModelState {
-            require(typeSpec.kind == TypeSpec.Kind.OBJECT)
-            require(!typeSpec.isAnonymousClass)
+        @KotlinPoetMetadataPreview
+        public fun of(className: ClassName, classInspector: ClassInspector): ModelState? {
+            if (!classInspector.isSubclass(className, KnownNames.MODEL_CLASS_NAME)) {
+                return null
+            }
+
+            val kmClass = classInspector.declarationContainerFor(className) as? ImmutableKmClass ?: return null
+            val typeSpec = kmClass.toTypeSpec(classInspector, className)
+
+            val fieldTypeResolver = ClassInspectorFieldTypeResolver(classInspector)
 
             val fields = typeSpec.propertySpecs.mapNotNull { property ->
                 val propertyType = property.type
@@ -20,7 +33,11 @@ public data class ModelState(
                 } else null
             }
 
-            return ModelState(checkNotNull(typeSpec.name), fields)
+            if (fields.isEmpty()) {
+                return null
+            }
+
+            return ModelState(className, fields)
         }
 
     }
