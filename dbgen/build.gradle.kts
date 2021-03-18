@@ -35,7 +35,7 @@ idea {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
-    api(project(":core"))
+//    api(project(":core"))
 
     implementation("com.squareup:kotlinpoet:1.7.2")
     implementation("org.postgresql:postgresql:42.2.18")

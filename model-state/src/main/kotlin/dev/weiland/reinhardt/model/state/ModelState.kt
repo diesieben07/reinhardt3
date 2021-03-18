@@ -7,10 +7,12 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import dev.weiland.reinhardt.constants.KnownNames
+import dev.weiland.reinhardt.model.ModelModifier
 
 public data class ModelState(
-    public val name: ClassName,
-    public val field: List<FieldState>
+    public val className: ClassName,
+    public val modifiers: Set<ModelModifier>,
+    public val fields: List<FieldState>
 ) {
 
     public companion object {
@@ -37,7 +39,9 @@ public data class ModelState(
                 return null
             }
 
-            return ModelState(className, fields)
+            val modifiers = emptySet<ModelModifier>()
+
+            return ModelState(className, modifiers, fields)
         }
 
     }

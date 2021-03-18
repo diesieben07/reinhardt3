@@ -1,6 +1,7 @@
+import dev.weiland.reinhardt.build.configureKotlinReinhardt
+
 plugins {
     kotlin("multiplatform")
-    idea
 }
 
 group = "dev.weiland.reinhardt"
@@ -11,30 +12,8 @@ repositories {
 }
 
 kotlin {
-//    explicitApi()
-
-    jvm() {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "1.8"
-                useIR = true
-                freeCompilerArgs = listOf("-Xjvm-default=all")
-            }
-        }
-    }
-
+    configureKotlinReinhardt(false)
     sourceSets {
-        all {
-            languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
-            languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
-            languageSettings.useExperimentalAnnotation("dev.weiland.reinhardt.ReinhardtInternalApi")
-        }
-
-        val commonMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-common"))
-            }
-        }
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("reflect"))

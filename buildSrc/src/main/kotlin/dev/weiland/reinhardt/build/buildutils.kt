@@ -25,6 +25,7 @@ fun KotlinProjectExtension.configureKotlinReinhardt(isPublic: Boolean = true) {
     sourceSets.all {
         languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
         languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
+        languageSettings.useExperimentalAnnotation("dev.weiland.reinhardt.ReinhardtInternalApi")
     }
 
     if (isPublic) {
