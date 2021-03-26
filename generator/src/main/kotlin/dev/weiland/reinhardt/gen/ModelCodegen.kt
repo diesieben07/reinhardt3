@@ -31,24 +31,24 @@ public class ModelCodegen(private val model: ModelState) {
             )
 
         for (property in model.fields) {
-            val propertySpec = when (property) {
-                is ModelFieldInfo.Simple -> {
-                    val fieldRefType = FIELD_REF_CLASS_NAME.parameterizedBy(property.fieldContentType)
-                    PropertySpec.builder(property.km.name, fieldRefType)
-                        .initializer("%T(this, %S)", FIELD_REF_CLASS_NAME, property.km.name)
-                }
-                is ModelFieldInfo.Relation -> {
-                    val modelRefClass = modelClassDerivedName(property.referencedModelClass, postfix = REF_CLASS_POSTFIX)
-                    PropertySpec.builder(property.km.name, modelRefClass)
-                        .delegate(
-                            "%N { %T() }",
-                            MemberName("kotlin", "lazy"),
-                            modelRefClass
-                        )
-                }
-            }
+//            val propertySpec = when (property) {
+//                is ModelFieldInfo.Simple -> {
+//                    val fieldRefType = FIELD_REF_CLASS_NAME.parameterizedBy(property.fieldContentType)
+//                    PropertySpec.builder(property.km.name, fieldRefType)
+//                        .initializer("%T(this, %S)", FIELD_REF_CLASS_NAME, property.km.name)
+//                }
+//                is ModelFieldInfo.Relation -> {
+//                    val modelRefClass = modelClassDerivedName(property.referencedModelClass, postfix = REF_CLASS_POSTFIX)
+//                    PropertySpec.builder(property.km.name, modelRefClass)
+//                        .delegate(
+//                            "%N { %T() }",
+//                            MemberName("kotlin", "lazy"),
+//                            modelRefClass
+//                        )
+//                }
+//            }
 
-            classBuilder.addProperty(propertySpec.build())
+//            classBuilder.addProperty(propertySpec.build())
         }
 
         return classBuilder.build()

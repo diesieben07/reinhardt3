@@ -15,6 +15,9 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation(project(":generator"))
+    implementation(project(":class-names"))
+    implementation(project(":model-state"))
     implementation("com.google.auto.service", "auto-service-annotations", "1.0-rc7")
     implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.2.0")
     implementation("com.squareup:kotlinpoet:1.7.2")

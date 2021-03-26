@@ -1,3 +1,5 @@
+import kotlin.reflect.KCallable
+
 //package example
 //
 //import dev.weiland.reinhardt.*

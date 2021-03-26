@@ -2,6 +2,7 @@ package dev.weiland.reinhardt.model.state
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.ImmutableKmClass
+import com.squareup.kotlinpoet.metadata.ImmutableKmType
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.internal.ClassInspectorUtil
@@ -30,6 +31,19 @@ public class ClassInspectorFieldTypeResolver(private val classInspector: ClassIn
             is WildcardTypeName -> TODO("NYI")
             is LambdaTypeName, is Dynamic -> return false
         }
+        return searchHierarchyForFieldClass(className)
+    }
+
+    override fun isFieldType(type: ImmutableKmType): Boolean {
+        val className = when (val classifier = type.classifier) {
+            is KmClassifier.Class -> ClassInspectorUtil.createClassName(classifier.name)
+            is KmClassifier.TypeParameter -> TODO("NYI")
+            is KmClassifier.TypeAlias -> throw IllegalArgumentException("Abbreviated type not supported here")
+        }
+        return searchHierarchyForFieldClass(className)
+    }
+
+    private fun searchHierarchyForFieldClass(className: ClassName): Boolean {
         var current = className
         do {
             if (current == KnownNames.FIELD_CLASS_NAME) {

@@ -1,8 +1,11 @@
 package dev.weiland.reinhardt.model.state
 
-import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.metadata.ImmutableKmType
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 
+@KotlinPoetMetadataPreview
 public data class FieldState(
     public val name: String,
-    public val fieldType: TypeName,
+    public val fieldType: ImmutableKmType,
 )
+
