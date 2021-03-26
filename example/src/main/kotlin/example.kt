@@ -9,6 +9,10 @@ import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import dev.weiland.reinhardt.model.*
 import dev.weiland.reinhardt.model.state.ClassInspectorFieldTypeResolver
 import dev.weiland.reinhardt.model.state.ModelState
+import dev.weiland.reinhardt.model.state.kmSerializersModule
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.json.Json
+import java.io.File
 
 object Person : Model() {
 
@@ -32,5 +36,13 @@ object User : Model() {
 fun main() {
     val classInspector = ReflectiveClassInspector.create()
     val className = Person::class.asClassName()
-    println(ModelState.of(className, classInspector))
+    val modelState = ModelState.of(className, classInspector)
+    println(modelState)
+
+    val writer = Json {
+        serializersModule = kmSerializersModule
+        prettyPrint = true
+    }
+    val json = writer.encodeToString(ModelState.serializer().nullable, modelState)
+    File("test.json").writeText(json)
 }

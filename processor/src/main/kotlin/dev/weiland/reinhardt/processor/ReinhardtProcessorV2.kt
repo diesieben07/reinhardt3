@@ -59,7 +59,8 @@ class ReinhardtProcessorV2 : AbstractProcessor() {
     }
 
     private fun processModel(typeElement: TypeElement): Boolean {
-        val modelState = ModelState.of()
+//        val modelState = ModelState.of()
+        return false
     }
 
 }

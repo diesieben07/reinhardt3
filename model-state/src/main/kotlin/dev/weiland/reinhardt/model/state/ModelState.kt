@@ -1,17 +1,18 @@
+@file:UseSerializers(ClassNameSerializer::class)
+
 package dev.weiland.reinhardt.model.state
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.metadata.ImmutableKmClass
-import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.squareup.kotlinpoet.metadata.isDeclaration
-import com.squareup.kotlinpoet.metadata.isSynthesized
+import com.squareup.kotlinpoet.metadata.*
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import dev.weiland.reinhardt.constants.KnownNames
 import dev.weiland.reinhardt.model.ModelModifier
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 
-@KotlinPoetMetadataPreview
+@Serializable
 public data class ModelState(
     public val className: ClassName,
     public val modifiers: Set<ModelModifier>,
@@ -28,26 +29,25 @@ public data class ModelState(
 
             val kmClass = classInspector.getClassOrNull(className) ?: return null
 
-            val typeSpec = kmClass.toTypeSpec(classInspector, className)
-
             val fieldTypeResolver = ClassInspectorFieldTypeResolver(classInspector)
 
             val fields = kmClass.properties.asSequence()
                 .filter { !it.isSynthesized && it.isDeclaration }
                 .filter { fieldTypeResolver.isFieldType(it.returnType) }
-
-            val fields = typeSpec.propertySpecs.mapNotNull { property ->
-                val propertyType = property.type
-                if (fieldTypeResolver.isFieldType(propertyType)) {
-                    FieldState(property.name, propertyType.to)
-                } else null
-            }
+                .map { property ->
+                    FieldState(property.name, property.returnType)
+                }
+                .toList()
 
             if (fields.isEmpty()) {
                 return null
             }
 
-            val modifiers = emptySet<ModelModifier>()
+            val modifiers = buildSet {
+                if (kmClass.isAbstract) {
+                    add(ModelModifier.ABSTRACT)
+                }
+            }
 
             return ModelState(className, modifiers, fields)
         }

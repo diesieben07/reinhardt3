@@ -1,5 +1,6 @@
 import dev.weiland.reinhardt.build.configureKotlinReinhardt
 import dev.weiland.reinhardt.build.kotlinPoet
+import dev.weiland.reinhardt.build.kotlinxSerialization
 
 plugins {
     kotlin("jvm")
@@ -19,6 +20,8 @@ dependencies {
     implementation(project(":model-state"))
 
     implementation(kotlinPoet("classinspector-reflective"))
+    implementation(kotlinxSerialization("core"))
+    implementation(kotlinxSerialization("json"))
 
     kapt(project(":processor"))
 }

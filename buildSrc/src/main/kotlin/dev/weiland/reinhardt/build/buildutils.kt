@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
 val kotlinPoetVersion = "1.7.2"
+val serializationVersion = "1.1.0"
 
 fun DependencyHandler.kotlinPoet(module: String? = null, version: String = kotlinPoetVersion): String {
     return buildString {
@@ -21,11 +22,16 @@ fun DependencyHandler.kotlinPoet(module: String? = null, version: String = kotli
     }
 }
 
+fun DependencyHandler.kotlinxSerialization(module: String, version: String = serializationVersion): String {
+    return "org.jetbrains.kotlinx:kotlinx-serialization-$module:$version"
+}
+
 fun KotlinProjectExtension.configureKotlinReinhardt(isPublic: Boolean = true) {
     sourceSets.all {
         languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
         languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
         languageSettings.useExperimentalAnnotation("dev.weiland.reinhardt.ReinhardtInternalApi")
+        languageSettings.useExperimentalAnnotation("com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview")
     }
 
     if (isPublic) {
