@@ -38,11 +38,4 @@ fun main() {
     val className = Person::class.asClassName()
     val modelState = ModelState.of(className, classInspector)
     println(modelState)
-
-    val writer = Json {
-        serializersModule = kmSerializersModule
-        prettyPrint = true
-    }
-    val json = writer.encodeToString(ModelState.serializer().nullable, modelState)
-    File("test.json").writeText(json)
 }

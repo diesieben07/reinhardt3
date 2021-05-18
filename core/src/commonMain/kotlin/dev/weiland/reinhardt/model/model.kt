@@ -1,55 +1,51 @@
 package dev.weiland.reinhardt.model
 
 import dev.weiland.reinhardt.ReinhardtInternalApi
-import java.lang.UnsupportedOperationException
+import dev.weiland.reinhardt.db.DbRow
 import java.lang.annotation.Inherited
 
 @Inherited
 @Retention(AnnotationRetention.BINARY)
 @Target(AnnotationTarget.CLASS)
-annotation class ModelAnnotation
+public annotation class ModelAnnotation
 
-interface Database {
+public interface Database {
 
-    fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF>
+    public fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF>
 
 }
 
-object DummyDatabase : Database {
+public object DummyDatabase : Database {
     override fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF> {
         return ModelQuerySetImpl(modelRef)
     }
 }
 
-interface DbRow {
+public interface ModelReader<M : Model, R : Any> {
+
+    public fun readEntity(row: DbRow): R
 
 }
 
-interface ModelReader<M : Model, R : Any> {
-
-    fun readEntity(row: DbRow): R
-
-}
-
-interface QuerySet<R> : Iterable<R> {
+public interface QuerySet<R> : Iterable<R> {
 
 
 }
 
-interface ModelQuerySet<M : Model, ME : Any, REF : ModelRef<M, ME>> : QuerySet<ME> {
+public interface ModelQuerySet<M : Model, ME : Any, REF : ModelRef<M, ME>> : QuerySet<ME> {
 
-    val ref: REF
+    public val ref: REF
 
     @ReinhardtInternalApi
-    fun addPrefetch(ref: ModelRef<*, *>): ModelQuerySet<M, ME, REF>
+    public fun addPrefetch(ref: ModelRef<*, *>): ModelQuerySet<M, ME, REF>
 
-    fun filter(filter: (REF) -> Expr<Boolean>): ModelQuerySet<M, ME, REF>
+    public fun filter(filter: (REF) -> Expr<Boolean>): ModelQuerySet<M, ME, REF>
 
 }
 
-interface PrefetchDsl {
+public interface PrefetchDsl {
 
-    operator fun ModelRef<*, *>.unaryPlus()
+    public operator fun ModelRef<*, *>.unaryPlus()
 
 }
 
@@ -65,13 +61,13 @@ internal object PrefetchDslImpl : PrefetchDsl {
 //    TODO()
 //}
 
-inline fun <M : Model, ME : Any, REF : ModelRef<M, ME>, Q : ModelQuerySet<M, ME, REF>> Q.prefetch(refs: PrefetchDsl.(REF) -> Unit): Q {
+public inline fun <M : Model, ME : Any, REF : ModelRef<M, ME>, Q : ModelQuerySet<M, ME, REF>> Q.prefetch(refs: PrefetchDsl.(REF) -> Unit): Q {
     TODO()
 }
 
-class ModelQuerySetImpl<M : Model, ME : Any, REF : ModelRef<M, ME>>(
+public class ModelQuerySetImpl<M : Model, ME : Any, REF : ModelRef<M, ME>>(
     override val ref: REF,
-    val filter: Expr<Boolean>? = null
+    public val filter: Expr<Boolean>? = null
 ) : ModelQuerySet<M, ME, REF> {
     override fun iterator(): Iterator<ME> {
         return iterator { }
@@ -93,28 +89,28 @@ class ModelQuerySetImpl<M : Model, ME : Any, REF : ModelRef<M, ME>>(
 
 }
 
-interface BaseModel {
+public interface BaseModel {
 
 }
 
 @ModelAnnotation
-abstract class Model : BaseModel {
+public abstract class Model : BaseModel {
     override fun toString(): String {
         return "Model(${this::class.simpleName ?: "<anonymous>"})"
     }
 }
 
-interface Expr<T>
+public interface Expr<T>
 
-data class ValueExpr<T>(val value: T) : Expr<T>
-data class EqExpr<T>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<Boolean>
+public data class ValueExpr<T>(val value: T) : Expr<T>
+public data class EqExpr<T>(val lhs: Expr<T>, val rhs: Expr<T>) : Expr<Boolean>
 
-infix fun <T> Expr<T>.eq(rhs: T): Expr<Boolean> = EqExpr(this, ValueExpr(rhs))
+public infix fun <T> Expr<T>.eq(rhs: T): Expr<Boolean> = EqExpr(this, ValueExpr(rhs))
 
 // refs
-open class FieldRef<T>(private val modelRef: ModelRef<*, *>, val fieldName: String) : Expr<T> {
+public open class FieldRef<T>(private val modelRef: ModelRef<*, *>, public val fieldName: String) : Expr<T> {
 
-    fun modelRef(): ModelRef<*, *> = modelRef
+    public fun modelRef(): ModelRef<*, *> = modelRef
 
     override fun toString(): String {
         return buildString {
@@ -126,9 +122,9 @@ open class FieldRef<T>(private val modelRef: ModelRef<*, *>, val fieldName: Stri
 
 }
 
-abstract class ModelRef<M : Model, ME : Any>(private val through: FieldRef<*>? = null) : Expr<ME> {
+public abstract class ModelRef<M : Model, ME : Any>(private val through: FieldRef<*>? = null) : Expr<ME> {
 
-    abstract fun model(): M
+    public abstract fun model(): M
 
     override fun toString(): String {
         return buildString {
@@ -144,27 +140,5 @@ abstract class ModelRef<M : Model, ME : Any>(private val through: FieldRef<*>? =
 
 }
 
-// fields
-sealed class Field
-
-fun <F : Field> F.nullable(): NullableField<F> = NullableField(this)
-
-abstract class RelationField<M : Model>(val referencedModel: M) : Field()
-
-
-
-abstract class SimpleField<T> : Field()
-class NullableField<F : Field>(val delegate: F) : Field()
-
-class TextField : SimpleField<String>() {
-
-}
-
-class HulloField<T> : SimpleField<T>()
-
-class ForeignKey<M : Model>(referencedModel: M) : RelationField<M>(referencedModel) {
-
-}
-
-val db: Database = DummyDatabase
+public val db: Database = DummyDatabase
 

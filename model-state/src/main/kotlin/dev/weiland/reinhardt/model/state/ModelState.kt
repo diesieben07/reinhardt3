@@ -1,18 +1,14 @@
-@file:UseSerializers(ClassNameSerializer::class)
-
 package dev.weiland.reinhardt.model.state
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.metadata.*
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.isAbstract
+import com.squareup.kotlinpoet.metadata.isDeclaration
+import com.squareup.kotlinpoet.metadata.isSynthesized
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
-import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import dev.weiland.reinhardt.constants.KnownNames
 import dev.weiland.reinhardt.model.ModelModifier
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 
-@Serializable
 public data class ModelState(
     public val className: ClassName,
     public val modifiers: Set<ModelModifier>,

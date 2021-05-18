@@ -7,9 +7,7 @@ import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import com.squareup.kotlinpoet.metadata.specs.internal.ClassInspectorUtil
 import dev.weiland.reinhardt.constants.KnownNames
-import kotlinx.metadata.KmClass
 import kotlinx.metadata.KmClassifier
-import kotlinx.metadata.isLocal
 
 @KotlinPoetMetadataPreview
 public class ClassInspectorFieldTypeResolver(private val classInspector: ClassInspector) : FieldTypeResolver {
@@ -54,7 +52,7 @@ public class ClassInspectorFieldTypeResolver(private val classInspector: ClassIn
         } while (true)
     }
 
-    override fun resolveFieldTypeInfo(fieldType: TypeName): FieldTypeInfo {
+    override fun resolveFieldTypeInfo(fieldType: TypeName): FieldType {
         TODO("Not yet implemented")
     }
 }

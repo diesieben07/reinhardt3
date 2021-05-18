@@ -9,6 +9,6 @@ public interface FieldTypeResolver {
     public fun isFieldType(type: TypeName): Boolean
     @KotlinPoetMetadataPreview
     public fun isFieldType(type: ImmutableKmType): Boolean
-    public fun resolveFieldTypeInfo(fieldType: TypeName): FieldTypeInfo
+    public fun resolveFieldTypeInfo(fieldType: TypeName): FieldType
 
 }

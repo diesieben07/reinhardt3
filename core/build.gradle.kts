@@ -12,7 +12,7 @@ repositories {
 }
 
 kotlin {
-    configureKotlinReinhardt(false)
+    configureKotlinReinhardt(true)
     sourceSets {
         val jvmMain by getting {
             dependencies {

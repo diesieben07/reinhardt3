@@ -73,7 +73,7 @@ internal fun ClassInspector.isSubclass(
 }
 
 @KotlinPoetMetadataPreview
-internal fun ClassInspector.getClassOrNull(className: ClassName): ImmutableKmClass? {
+public fun ClassInspector.getClassOrNull(className: ClassName): ImmutableKmClass? {
     return getContainerOrNull(className) as? ImmutableKmClass
 }
 
