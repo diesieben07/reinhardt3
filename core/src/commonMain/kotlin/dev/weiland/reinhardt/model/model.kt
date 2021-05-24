@@ -23,7 +23,17 @@ public object DummyDatabase : Database {
 
 public interface ModelReader<M : Model, R : Any> {
 
-    public fun readEntity(row: DbRow): R
+    public fun readEntity(row: DbRow, columnPrefix: String): R {
+        return checkNotNull(readEntityNullable(row, columnPrefix)) {
+            "Entity was null unexpectedly"
+        }
+    }
+
+    public fun readEntityNullable(row: DbRow, columnPrefix: String): R?
+    public fun readLazyEntity(row: DbRow, columnPrefix: String): R? {
+        TODO()
+    }
+
 
 }
 

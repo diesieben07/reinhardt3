@@ -1,14 +1,16 @@
 package dev.weiland.reinhardt.model
 
 import dev.weiland.reinhardt.db.DbRow
+import dev.weiland.reinhardt.type.ColumnType
 
 // fields
-public sealed interface BaseField
+public sealed interface Field
 
-public abstract class RelationField<M : Model>(public val referencedModel: M) : BaseField
-public abstract class SimpleField<T> : BaseField {
+public abstract class RelationField<M : Model>(public val referencedModel: M) : Field
 
-    public open fun nullable(): SimpleField<T?> {
+public abstract class BasicField<T> : Field {
+
+    public open fun nullable(): BasicField<T?> {
         return NullableWrapperField(this)
     }
 
@@ -25,7 +27,17 @@ public abstract class SimpleField<T> : BaseField {
 
 }
 
-public abstract class NullableField<T> : SimpleField<T?>() {
+public abstract class TypeBasedField<T> : BasicField<T>() {
+
+    public abstract val type: ColumnType<T>
+
+    override fun fromDbNullable(row: DbRow, column: String): T? {
+        return type.getNullable(row, column)
+    }
+
+}
+
+public abstract class NullableField<T> : BasicField<T?>() {
 
     override fun nullable(): NullableField<T> = this
     override fun fromDb(row: DbRow, column: String): T? = fromDbNullable(row, column)
@@ -33,7 +45,7 @@ public abstract class NullableField<T> : SimpleField<T?>() {
 
 }
 
-public class NullableWrapperField<T>(public val delegate: SimpleField<T>) : NullableField<T>() {
+public class NullableWrapperField<T>(public val delegate: BasicField<T>) : NullableField<T>() {
 
     override fun fromDbNullable(row: DbRow, column: String): T? {
         return delegate.fromDbNullable(row, column)

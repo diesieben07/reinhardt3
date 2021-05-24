@@ -1,4 +1,5 @@
 import dev.weiland.reinhardt.build.configureKotlinReinhardt
+import dev.weiland.reinhardt.build.coroutinesVersion
 
 plugins {
     kotlin("multiplatform")
@@ -14,8 +15,14 @@ repositories {
 kotlin {
     configureKotlinReinhardt(true)
     sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+            }
+        }
         val jvmMain by getting {
             dependencies {
+                implementation(kotlin("stdlib"))
                 implementation(kotlin("reflect"))
                 implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.2.0")
             }

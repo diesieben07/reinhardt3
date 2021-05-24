@@ -1,18 +1,17 @@
 package dev.weiland.reinhardt.model
 
-import dev.weiland.reinhardt.db.DbRow
+import dev.weiland.reinhardt.type.ColumnType
+import dev.weiland.reinhardt.type.IntType
+import dev.weiland.reinhardt.type.StringType
 
-public class TextField : SimpleField<String>() {
-    override fun fromDbNullable(row: DbRow, column: String): String? {
-        return row.getString(column)
-    }
+public class TextField : TypeBasedField<String>() {
+    override val type: ColumnType<String>
+        get() = StringType
 }
 
-public class IntField : SimpleField<Int>() {
+public class IntField : TypeBasedField<Int>() {
 
-    override fun fromDbNullable(row: DbRow, column: String): Int? {
-        val value = row.getInt(column)
-        return if (row.wasNull(column)) null else value
-    }
+    override val type: ColumnType<Int>
+        get() = IntType
 
 }

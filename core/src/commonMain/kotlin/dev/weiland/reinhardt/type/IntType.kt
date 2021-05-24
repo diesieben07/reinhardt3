@@ -1,9 +1,10 @@
 package dev.weiland.reinhardt.type
 
-import dev.weiland.reinhardt.ResultRow
+import dev.weiland.reinhardt.db.DbRow
 
 public object IntType : ColumnType<Int> {
-    override fun getNullable(row: ResultRow, column: String): Int? {
-        TODO("Not yet implemented")
+    override fun getNullable(row: DbRow, column: String): Int? {
+        val value = row.getInt(column)
+        return if (row.wasNull(column)) null else value
     }
 }

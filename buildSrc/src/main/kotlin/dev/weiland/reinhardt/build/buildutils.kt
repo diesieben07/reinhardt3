@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
 val kotlinPoetVersion = "1.7.2"
 val serializationVersion = "1.1.0"
+val coroutinesVersion = "1.5.0"
 
 fun DependencyHandler.kotlinPoet(module: String? = null, version: String = kotlinPoetVersion): String {
     return buildString {
@@ -47,7 +48,12 @@ fun KotlinMultiplatformExtension.configureKotlinReinhardt(isPublic: Boolean = tr
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
+                implementation(kotlin("stdlib"))
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib"))
             }
         }
     }
