@@ -5,6 +5,7 @@ import dev.weiland.reinhardt.model.ForeignKey
 import dev.weiland.reinhardt.model.Model
 import dev.weiland.reinhardt.model.ModelReader
 import dev.weiland.reinhardt.model.TextField
+import kotlinx.coroutines.Deferred
 
 
 object User : Model() {
@@ -28,7 +29,7 @@ class UserEntityD(
     val parentId: String?
 ) {
 
-    private var parent: Defe
+    private var parent: Deferred<UserEntity>? = null
 
 }
 
