@@ -2,9 +2,7 @@ package dev.weiland.reinhardt.model
 
 import dev.weiland.reinhardt.ReinhardtInternalApi
 import dev.weiland.reinhardt.db.DbRow
-import java.lang.annotation.Inherited
 
-@Inherited
 @Retention(AnnotationRetention.BINARY)
 @Target(AnnotationTarget.CLASS)
 public annotation class ModelAnnotation

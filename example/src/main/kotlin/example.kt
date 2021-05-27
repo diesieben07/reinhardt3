@@ -24,12 +24,14 @@ interface UserEntity {
 }
 
 class UserEntityD(
-    val id: String,
-    val name: String,
-    val parentId: String?
-) {
+    override val id: String,
+    override val name: String,
+    override val parentId: String?,
+): UserEntity {
 
     private var parent: Deferred<UserEntity>? = null
+
+    override suspend fun parent(): UserEntity = parent.await()
 
 }
 
