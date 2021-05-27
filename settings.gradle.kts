@@ -10,9 +10,11 @@ include("class-names")
 include("jdbc")
 
 pluginManagement {
+    val kotlinVersion: String by settings
+
     plugins {
-        kotlin("multiplatform") version "1.5.10" apply false
-        kotlin("jvm")version "1.5.10" apply false
-        kotlin("plugin.serialization") version "1.5.10" apply false
+        kotlin("multiplatform") version kotlinVersion apply false
+        kotlin("jvm")version kotlinVersion apply false
+        kotlin("plugin.serialization") version kotlinVersion apply false
     }
 }
