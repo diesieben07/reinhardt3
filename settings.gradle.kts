@@ -18,3 +18,4 @@ pluginManagement {
         kotlin("plugin.serialization") version kotlinVersion apply false
     }
 }
+include("ksp-processor")

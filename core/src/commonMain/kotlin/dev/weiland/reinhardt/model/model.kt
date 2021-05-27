@@ -103,9 +103,37 @@ public interface BaseModel {
 
 @ModelAnnotation
 public abstract class Model : BaseModel {
+
+    private var info: ModelInfo? = null
+
+    internal fun infoOrThrow(): ModelInfo {
+        return info ?: throw IllegalStateException("ModelInfo for $this accessed before initialization")
+    }
+
+    public fun info(): ModelInfo {
+        return info ?: DeferredModelInfo(this)
+    }
+
+    @ReinhardtInternalApi
+    public fun setInfo(info: ModelInfo) {
+        check(this.info == null) {
+            "Duplicate ModelInfo for $this"
+        }
+        this.info = info
+    }
+
     override fun toString(): String {
         return "Model(${this::class.simpleName ?: "<anonymous>"})"
     }
+}
+
+private class DeferredModelInfo(private val model: Model) : ModelInfo {
+    override val qualifiedName: String
+        get() = model.infoOrThrow().qualifiedName
+    override val fields: List<Field>
+        get() = model.infoOrThrow().fields
+    override val primaryKey: BasicField<*>?
+        get() = model.infoOrThrow().primaryKey
 }
 
 public interface Expr<T>

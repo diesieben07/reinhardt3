@@ -2,6 +2,8 @@ package dev.weiland.reinhardt.db
 
 public interface DbRow {
 
+    public val database: Database
+
     public fun getInt(column: String): Int
     public fun getLong(column: String): Long
     public fun getDouble(column: String): Double
