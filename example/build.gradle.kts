@@ -1,10 +1,9 @@
 import dev.weiland.reinhardt.build.configureKotlinReinhardt
-import dev.weiland.reinhardt.build.kotlinPoet
-import dev.weiland.reinhardt.build.kotlinxSerialization
 
 plugins {
     id("com.google.devtools.ksp") version "1.5.10-1.0.0-beta01"
     kotlin("jvm")
+    idea
 }
 
 group = "dev.weiland.reinhardt"
@@ -35,3 +34,10 @@ dependencies {
 //}
 
 kotlin.configureKotlinReinhardt(false)
+
+idea {
+    module {
+        sourceDirs = sourceDirs + file("build/generated/ksp/main/kotlin/")
+        generatedSourceDirs = generatedSourceDirs + file("build/generated/ksp/main/kotlin/")
+    }
+}

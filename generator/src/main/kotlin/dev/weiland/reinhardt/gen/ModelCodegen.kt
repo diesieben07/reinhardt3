@@ -1,73 +1,69 @@
 package dev.weiland.reinhardt.gen
 
 import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.metadata.ImmutableKmClass
-import com.squareup.kotlinpoet.metadata.specs.ClassInspector
-import com.squareup.kotlinpoet.metadata.specs.internal.ClassInspectorUtil
-import dev.weiland.reinhardt.constants.KnownNames.MODEL_REF_CLASS_NAME
-import dev.weiland.reinhardt.constants.KnownNames.MODEL_REF_MODEL_FUN
-import dev.weiland.reinhardt.constants.KnownNames.makeRefClassName
-import dev.weiland.reinhardt.model.state.FieldState
-import dev.weiland.reinhardt.model.state.ModelState
-import dev.weiland.reinhardt.model.state.getClassOrNull
 
-public class ModelCodegen(private val model: ModelState, private val inspector: ClassInspector) {
+public class ModelCodegen(
+    private val model: CodegenModel,
+    private val target: CodegenTarget,
+) {
+
+    private companion object {
+
+        const val basePackage = "dev.weiland.reinhardt"
+        const val dbPackage = "$basePackage.db"
+        val databaseClassName = ClassName(dbPackage, "Database")
+
+    }
 
     public fun generate() {
-        generateRefClass()
-    }
-
-    private fun generateRefClass(): TypeSpec {
-        val refClassName = makeRefClassName(model.className)
-        val superclass = MODEL_REF_CLASS_NAME.parameterizedBy(
-            model.className,
-            refClassName
+        val file = FileSpec.builder(
+            model.className.packageName,
+            model.className.simpleNames.joinToString(postfix = "__reinhardt_generated", separator = "_")
         )
-        val classBuilder = TypeSpec.classBuilder(refClassName)
-        classBuilder
-            .superclass(superclass)
-            .addFunction(
-                FunSpec.builder(MODEL_REF_MODEL_FUN)
-                    .addModifiers(KModifier.FINAL, KModifier.OVERRIDE)
-                    .returns(model.className)
-                    .addCode("return %T", model.className)
-                    .build()
-            )
 
-        for (property in model.fields) {
+        val entityInterfaceClassName = model.className.peerClass(model.className.simpleName + "Entity")
+        val entityInterface = TypeSpec.interfaceBuilder(
+            entityInterfaceClassName
+        )
 
+        val entityClass = TypeSpec.classBuilder(
+            model.className.peerClass(model.className.simpleName + "EntityD")
+        )
+        entityClass.addModifiers(KModifier.PRIVATE)
+        entityClass.addSuperinterface(entityInterfaceClassName)
 
-//            val propertySpec = when (property) {
-//                is ModelFieldInfo.Simple -> {
-//                    val fieldRefType = FIELD_REF_CLASS_NAME.parameterizedBy(property.fieldContentType)
-//                    PropertySpec.builder(property.km.name, fieldRefType)
-//                        .initializer("%T(this, %S)", FIELD_REF_CLASS_NAME, property.km.name)
-//                }
-//                is ModelFieldInfo.Relation -> {
-//                    val modelRefClass = modelClassDerivedName(property.referencedModelClass, postfix = REF_CLASS_POSTFIX)
-//                    PropertySpec.builder(property.km.name, modelRefClass)
-//                        .delegate(
-//                            "%N { %T() }",
-//                            MemberName("kotlin", "lazy"),
-//                            modelRefClass
-//                        )
-//                }
-//            }
+        val entityClassConstructor = FunSpec.constructorBuilder()
 
-//            classBuilder.addProperty(propertySpec.build())
+        entityClassConstructor.addParameter("_db", databaseClassName)
+
+        entityClass.addProperty(
+            PropertySpec.builder(
+                "_db", databaseClassName
+            ).initializer("_db").build()
+        )
+
+        for (field in model.fields) {
+            for (entityProperty in field.entityProperties) {
+                val interfaceProperty = PropertySpec.builder(
+                    entityProperty.name, entityProperty.type
+                )
+                entityInterface.addProperty(interfaceProperty.build())
+
+                val classProperty = PropertySpec.builder(
+                    entityProperty.name, entityProperty.type
+                ).initializer(entityProperty.name).addModifiers(KModifier.OVERRIDE)
+                entityClassConstructor.addParameter(entityProperty.name, entityProperty.type)
+                entityClass.addProperty(classProperty.build())
+            }
         }
 
-        return classBuilder.build()
+        entityClass.primaryConstructor(entityClassConstructor.build())
+
+        file.addType(entityInterface.build())
+        file.addType(entityClass.build())
+
+        target.accept(file.build())
     }
 
-    private fun generateField(field: FieldState, builder: TypeSpec.Builder) {
-        val fieldClass = getFieldClass(field)
-
-    }
-
-    private fun getFieldClass(field: FieldState): ImmutableKmClass {
-        return inspector.getClassOrNull(ClassInspectorUtil.createClassName(field.fieldClassName)) ?: error("Field class ${field.fieldClassName} not found")
-    }
 
 }

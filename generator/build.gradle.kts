@@ -3,6 +3,7 @@ import dev.weiland.reinhardt.build.kotlinPoet
 
 plugins {
     kotlin("jvm")
+    idea
 }
 
 group = "dev.weiland.reinhardt"
@@ -17,7 +18,7 @@ dependencies {
     implementation(project(":class-names"))
     implementation(project(":model-state"))
 
-    implementation(kotlinPoet())
+    api(kotlinPoet())
     implementation(kotlinPoet("metadata"))
     implementation(kotlinPoet("metadata-specs"))
     implementation(kotlinPoet("classinspector-reflective"))
