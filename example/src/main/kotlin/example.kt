@@ -11,14 +11,13 @@ import java.util.*
 
 
 object User : Model() {
-    val id = TextField().primaryKey().testWrapper()
+    @PrimaryKey
+    val id = TextField()
     val name = TextField().nullable()
     val parent = ForeignKey(User).nullable()
 }
 
 // following is generated code
-
-fun User.primaryKey() = id
 
 object UserInfo : ModelInfo {
 

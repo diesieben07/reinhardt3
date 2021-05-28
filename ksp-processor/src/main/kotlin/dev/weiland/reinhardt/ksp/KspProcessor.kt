@@ -58,6 +58,10 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
             "dev.weiland.reinhardt.model.FieldAnnotation"
         )
 
+        val primaryKeyAnnotationName = resolver.getKSNameFromString(
+            "dev.weiland.reinhardt.model.PrimaryKey"
+        )
+
         val fieldClass = resolver.getClassDeclarationByName(
             resolver.getKSNameFromString("dev.weiland.reinhardt.model.Field")
         ) ?: error("failed to find field class")
@@ -105,22 +109,40 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
                 return null
             }
 
-            val entityProperties = if (basicFieldType.isAssignableFrom(resolvedType)) {
+            val entityProperties: List<CodegenEntityProperty>
+            val asBasicFieldType: KSType?
+            if (basicFieldType.isAssignableFrom(resolvedType)) {
                 // TODO
                 val resolvedFieldDataType = basicFieldFromDb.asMemberOf(resolvedType).returnType ?: return null
-                listOf(
+                entityProperties = listOf(
                     CodegenEntityProperty(
                         property.simpleName.asString(),
                         resolvedFieldDataType.toKotlinPoet()
                     )
                 )
+                asBasicFieldType = basicFieldClass.asType(
+                    listOf(
+                        resolver.getTypeArgument(
+                            resolver.createKSTypeReferenceFromKSType(resolvedFieldDataType),
+                            Variance.INVARIANT
+                        )
+                    )
+                )
             } else {
                 // TODO
-                listOf()
+                entityProperties = listOf()
+                asBasicFieldType = null
             }
             return CodegenField(
-                property.simpleName.asString(), entityProperties
+                property.simpleName.asString(), entityProperties, property.isPrimaryKey(),
+                asBasicFieldType = asBasicFieldType?.toKotlinPoet()
             )
+        }
+
+        private fun KSPropertyDeclaration.isPrimaryKey(): Boolean {
+            return annotations.any {
+                it.shortName.getShortName() == "PrimaryKey" && it.annotationType.resolve().declaration.qualifiedName == primaryKeyAnnotationName
+            }
         }
 
         private fun KSType.toKotlinPoet(): TypeName {

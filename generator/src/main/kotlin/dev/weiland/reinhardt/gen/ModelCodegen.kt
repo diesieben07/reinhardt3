@@ -11,7 +11,10 @@ public class ModelCodegen(
 
         const val basePackage = "dev.weiland.reinhardt"
         const val dbPackage = "$basePackage.db"
+        const val modelPackage = "$basePackage.model"
         val databaseClassName = ClassName(dbPackage, "Database")
+        val fieldClassName = ClassName(modelPackage, "Field")
+        val basicFieldClassName = ClassName(modelPackage, "BasicField")
 
     }
 
@@ -59,6 +62,23 @@ public class ModelCodegen(
 
         entityClass.primaryConstructor(entityClassConstructor.build())
 
+        val primaryKeyField = model.fields.singleOrNull { it.isPrimaryKey }
+
+        val primaryKeyFun = FunSpec.builder("primaryKey")
+            .receiver(model.className)
+        if (primaryKeyField != null) {
+            primaryKeyFun.returns(
+                checkNotNull(primaryKeyField.asBasicFieldType)
+            )
+            primaryKeyFun.addCode(
+                "return %T.%N", model.className, primaryKeyField.name
+            )
+        } else {
+            primaryKeyFun.returns(NOTHING.copy(nullable = true))
+            primaryKeyFun.addCode("return null")
+        }
+
+        file.addFunction(primaryKeyFun.build())
         file.addType(entityInterface.build())
         file.addType(entityClass.build())
 
