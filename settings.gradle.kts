@@ -8,9 +8,15 @@ include("generator")
 include("model-state")
 include("class-names")
 include("jdbc")
+include("ksp-processor")
 
 pluginManagement {
     val kotlinVersion: String by settings
+
+    repositories {
+        gradlePluginPortal()
+        google()
+    }
 
     plugins {
         kotlin("multiplatform") version kotlinVersion apply false
@@ -18,4 +24,3 @@ pluginManagement {
         kotlin("plugin.serialization") version kotlinVersion apply false
     }
 }
-include("ksp-processor")

@@ -1,17 +1,18 @@
 package dev.weiland.reinhardt.example
 
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import dev.weiland.reinhardt.db.Database
 import dev.weiland.reinhardt.db.DbRow
 import dev.weiland.reinhardt.model.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import java.util.*
 
 
 object User : Model() {
-    val id = TextField()
-    val name = TextField()
+    val id = TextField().primaryKey().testWrapper()
+    val name = TextField().nullable()
     val parent = ForeignKey(User).nullable()
 }
 
@@ -28,13 +29,13 @@ object UserInfo : ModelInfo {
     override val qualifiedName: String
         get() = "dev.weiland.reinhardt.example.User"
     override val fields: List<Field> = listOf(User.id, User.name, User.parent)
-    override val primaryKey: BasicField<*>
+    override val primaryKey: BasicField<*>?
         get() = User.id
 }
 
 interface UserEntity {
     val id: String
-    val name: String
+    val name: String?
     val parentId: String?
     suspend fun parent(): UserEntity
 }
@@ -42,7 +43,7 @@ interface UserEntity {
 private class UserEntityD(
     private val database: Database,
     override val id: String,
-    override val name: String,
+    override val name: String?,
     override val parentId: String?,
 ): UserEntity {
 
@@ -78,5 +79,5 @@ object UserReader : ModelReader<User, UserEntity> {
 }
 
 fun main() {
-
+    print(ServiceLoader.load(SymbolProcessorProvider::class.java).toList())
 }
