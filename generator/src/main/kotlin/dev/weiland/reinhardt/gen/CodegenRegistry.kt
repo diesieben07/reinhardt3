@@ -9,7 +9,7 @@ public class CodegenRegistry {
 
     init {
         fieldGens.add { _, field ->
-            SimpleFieldCodegen(field)
+            BasicFieldCodegen(field)
         }
     }
 

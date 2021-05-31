@@ -110,7 +110,7 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
             }
 
             val entityProperties: List<CodegenEntityProperty>
-            val asBasicFieldType: KSType?
+            val basicFieldContentType: KSType?
             if (basicFieldType.isAssignableFrom(resolvedType)) {
                 // TODO
                 val resolvedFieldDataType = basicFieldFromDb.asMemberOf(resolvedType).returnType ?: return null
@@ -120,22 +120,15 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
                         resolvedFieldDataType.toKotlinPoet()
                     )
                 )
-                asBasicFieldType = basicFieldClass.asType(
-                    listOf(
-                        resolver.getTypeArgument(
-                            resolver.createKSTypeReferenceFromKSType(resolvedFieldDataType),
-                            Variance.INVARIANT
-                        )
-                    )
-                )
+                basicFieldContentType = resolvedFieldDataType
             } else {
                 // TODO
                 entityProperties = listOf()
-                asBasicFieldType = null
+                basicFieldContentType = null
             }
             return CodegenField(
                 property.simpleName.asString(), entityProperties, property.isPrimaryKey(),
-                asBasicFieldType = asBasicFieldType?.toKotlinPoet()
+                basicFieldContentType = basicFieldContentType?.toKotlinPoet()
             )
         }
 

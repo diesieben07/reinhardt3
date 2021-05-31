@@ -12,7 +12,7 @@ public data class CodegenField(
     val name: String,
     val entityProperties: List<CodegenEntityProperty>,
     val isPrimaryKey: Boolean,
-    val asBasicFieldType: TypeName?
+    val basicFieldContentType: TypeName?
 )
 
 
