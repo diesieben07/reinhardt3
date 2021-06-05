@@ -14,6 +14,8 @@ import dev.weiland.reinhardt.gen.*
 
 internal class KspProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
 
+
+
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val modelClass = resolver.getClassDeclarationByName(
             resolver.getKSNameFromString("dev.weiland.reinhardt.model.Model")
@@ -97,23 +99,37 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
             }.toList()
             val codegenModel = CodegenModel(
                 ClassName.bestGuess(checkNotNull(cls.qualifiedName).asString()),
-                fields
             )
             ModelCodegen(codegenModel, codegenTarget).generate()
             environment.logger.warn("Found fields: $fields")
         }
 
         private fun makeCodegenField(property: KSPropertyDeclaration): CodegenField? {
-            val resolvedType = property.type.resolve()
-            if (!fieldType.isAssignableFrom(resolvedType)) {
+            val fieldResolvedType = property.type.resolve()
+            if (!fieldType.isAssignableFrom(fieldResolvedType)) {
                 return null
+            }
+
+            val fieldData = CodegenField(
+                property.simpleName.asString(), property.isPrimaryKey(),
+            )
+            val lookup = object : FieldInfoLookup {
+                override fun lookupSupertype(rawClass: ClassName): TypeName? {
+                    val supertype = resolver.getClassDeclarationByName(rawClass.toKSName()) ?: return false
+                    return
+                }
+
+                override fun isSubtypeOf(rawClass: ClassName): Boolean {
+                    val supertype = resolver.getClassDeclarationByName(rawClass.toKSName()) ?: return false
+                    return supertype.asStarProjectedType().isAssignableFrom(fieldResolvedType)
+                }
             }
 
             val entityProperties: List<CodegenEntityProperty>
             val basicFieldContentType: KSType?
-            if (basicFieldType.isAssignableFrom(resolvedType)) {
+            if (basicFieldType.isAssignableFrom(fieldResolvedType)) {
                 // TODO
-                val resolvedFieldDataType = basicFieldFromDb.asMemberOf(resolvedType).returnType ?: return null
+                val resolvedFieldDataType = basicFieldFromDb.asMemberOf(fieldResolvedType).returnType ?: return null
                 entityProperties = listOf(
                     CodegenEntityProperty(
                         property.simpleName.asString(),
@@ -126,10 +142,10 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
                 entityProperties = listOf()
                 basicFieldContentType = null
             }
-            return CodegenField(
-                property.simpleName.asString(), entityProperties, property.isPrimaryKey(),
-                basicFieldContentType = basicFieldContentType?.toKotlinPoet()
-            )
+        }
+
+        private fun ClassName.toKSName(): KSName {
+            return resolver.getKSNameFromString(this.canonicalName)
         }
 
         private fun KSPropertyDeclaration.isPrimaryKey(): Boolean {

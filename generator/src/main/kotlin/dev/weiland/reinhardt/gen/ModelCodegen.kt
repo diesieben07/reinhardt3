@@ -2,6 +2,7 @@ package dev.weiland.reinhardt.gen
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import dev.weiland.reinhardt.gen.field.BasicFieldCodegen
 
 public class ModelCodegen(
     private val model: CodegenModel,
@@ -22,6 +23,13 @@ public class ModelCodegen(
         const val modelReaderReadEntityNullable = "readEntityNullable"
         const val dbRowDatabaseProperty = "database"
 
+    }
+
+    private fun CodegenField.makeCodegen(): FieldCodegen {
+        return when {
+            basicFieldContentType != null -> BasicFieldCodegen(model, this)
+            else -> TODO()
+        }
     }
 
     public fun generate() {
@@ -61,64 +69,25 @@ public class ModelCodegen(
             ).initializer("_db").build()
         )
 
-        val primaryKeyField = model.fields.singleOrNull { it.isPrimaryKey }
+        val genContext = FieldGenContext(
+            entityInterfaceName = entityInterfaceClassName, entityInterface = entityInterface,
+            entityClassName = entityClassClassName, entityClass = entityClass, entityClassConstructor = entityClassConstructor,
+            entityReaderName = entityReaderClassName, entityReader = entityReaderClass,
+            entityReaderReadNullableFun = entityReaderReadFun,
+            entityClassCallParams = mutableListOf()
+        )
 
-        val primaryKeyFun = FunSpec.builder("primaryKey")
-            .receiver(model.className)
-
-        if (primaryKeyField != null) {
-            entityReaderReadFun.addCode(
-                "val %N = %T.%N.fromDbNullable(row, columnPrefix + %S) ?: return null\n",
-                primaryKeyField.name, model.className, primaryKeyField.name, primaryKeyField.name
-            )
-
-            primaryKeyFun.returns(
-                checkNotNull(primaryKeyField.basicFieldContentType)
-            )
-            primaryKeyFun.addCode(
-                "return %T.%N", model.className, primaryKeyField.name
-            )
-        } else {
-            primaryKeyFun.returns(NOTHING.copy(nullable = true))
-            primaryKeyFun.addCode("return null")
-        }
-
-        for (field in model.fields) {
-
-            for (entityProperty in field.entityProperties) {
-                val interfaceProperty = PropertySpec.builder(
-                    entityProperty.name, entityProperty.type
-                )
-                entityInterface.addProperty(interfaceProperty.build())
-
-                val classProperty = PropertySpec.builder(
-                    entityProperty.name, entityProperty.type
-                ).initializer(entityProperty.name).addModifiers(KModifier.OVERRIDE)
-                entityClassConstructor.addParameter(entityProperty.name, entityProperty.type)
-                entityClass.addProperty(classProperty.build())
-            }
-            if (!field.isPrimaryKey) {
-                if (field.basicFieldContentType != null) {
-                    entityReaderReadFun.addCode(
-                        "val %N = %T.%N.fromDb(row, columnPrefix + %S)\n",
-                        field.name, model.className, field.name, field.name
-                    )
-                } else {
-                    entityReaderReadFun.addCode(
-                        "val %N = %M()\n",
-                        field.name, MemberName("kotlin", "TODO")
-                    )
-                }
-            }
+        val fieldGens = model.fields.sortedBy { !it.isPrimaryKey }.map { it.makeCodegen() }
+        for (fieldGen in fieldGens) {
+            fieldGen.generate(genContext)
         }
 
         entityReaderReadFun.addCode(
             "return %T(row.database", entityClassClassName
         )
-        for (field in model.fields) {
-            entityReaderReadFun.addCode(
-                ", %N", field.name
-            )
+        for (param in genContext.entityClassCallParams) {
+            entityReaderReadFun.addCode(", ")
+            entityReaderReadFun.addCode(param)
         }
         entityReaderReadFun.addCode(")")
 
@@ -126,7 +95,7 @@ public class ModelCodegen(
 
         entityClass.primaryConstructor(entityClassConstructor.build())
 
-        file.addFunction(primaryKeyFun.build())
+//        file.addFunction(primaryKeyFun.build())
         file.addType(entityInterface.build())
         file.addType(entityClass.build())
         file.addType(entityReaderClass.build())

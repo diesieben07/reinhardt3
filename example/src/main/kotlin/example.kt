@@ -15,24 +15,24 @@ object User : Model() {
     @PrimaryKey
     val id = TextField()
     val name = TextField().nullable()
-    val parent = ForeignKey(User).nullable()
+//    val parent = ForeignKey(User).nullable()
 }
 
 // following is generated code
 
-object UserInfo : ModelInfo {
-
-    init {
-        User.setInfo(this)
-    }
-
-    override val qualifiedName: String
-        get() = "dev.weiland.reinhardt.example.User"
-    override val fields: List<Field> = listOf(User.id, User.name, User.parent)
-    override val primaryKey: BasicField<*>?
-        get() = User.id
-
-}
+//object UserInfo : ModelInfo {
+//
+//    init {
+//        User.setInfo(this)
+//    }
+//
+//    override val qualifiedName: String
+//        get() = "dev.weiland.reinhardt.example.User"
+//    override val fields: List<Field> = listOf(User.id, User.name, User.parent)
+//    override val primaryKey: BasicField<*>?
+//        get() = User.id
+//
+//}
 
 //interface UserEntity {
 //    val id: String
