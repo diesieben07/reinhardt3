@@ -15,7 +15,10 @@ object User : Model() {
     @PrimaryKey
     val id = TextField()
     val name = TextField().nullable()
-    val parent = ForeignKey(User).nullable()
+    @Eager
+    val nullableParent = ForeignKey(User).nullable()
+    @Eager
+    val parent = ForeignKey(User)
 }
 
 // following is generated code

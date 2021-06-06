@@ -140,6 +140,13 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
                     val supertype = resolver.getClassDeclarationByName(rawClass.toKSName()) ?: return false
                     return supertype.asStarProjectedType().isAssignableFrom(fieldResolvedType)
                 }
+
+                override fun hasAnnotation(annotationClassName: ClassName): Boolean {
+                    val ksName = annotationClassName.toKSName()
+                    return property.annotations.any {
+                        it.shortName.getShortName() == ksName.getShortName() && it.annotationType.resolve().declaration.qualifiedName == ksName
+                    }
+                }
             }
 
             val fieldCodegen = FieldCodegenFactories.getCodeGenerator(model, fieldData, lookup)
