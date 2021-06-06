@@ -1,5 +1,6 @@
 package dev.weiland.reinhardt.gen.field
 
+import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import dev.weiland.reinhardt.gen.*
 
@@ -9,14 +10,14 @@ public class BasicFieldCodegen(
     private val basicFieldContentType: TypeName,
     ) : FieldCodegen {
 
-    public object Factory : FieldCodegenFactory {
+    @AutoService(FieldCodegenFactory::class)
+    public class Factory : FieldCodegenFactory {
 
         private val basicFieldClassName = ClassName("dev.weiland.reinhardt.model", "BasicField")
 
         override fun getCodeGenerator(model: CodegenModel, field: CodegenField, lookup: FieldInfoLookup): FieldCodegen? {
             // TODO: log warnings in case of missing args, etc.
-            val asBasicFieldType = lookup.lookupSupertype(basicFieldClassName) as? ParameterizedTypeName ?: return null
-            val basicFieldContentType = asBasicFieldType.typeArguments.singleOrNull() ?: return null
+            val basicFieldContentType = lookup.lookupFunctionReturnType(basicFieldClassName, "fromDb") ?: return null
             return BasicFieldCodegen(model, field, basicFieldContentType)
         }
     }

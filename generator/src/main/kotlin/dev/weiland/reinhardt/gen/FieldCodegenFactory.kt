@@ -11,7 +11,8 @@ public interface FieldCodegenFactory {
 
 public interface FieldInfoLookup {
 
-    public fun lookupSupertype(rawClass: ClassName): TypeName?
+    public fun lookupPropertyType(propertyClassName: ClassName, propertyName: String): TypeName?
+    public fun lookupFunctionReturnType(functionClassName: ClassName, functionName: String): TypeName?
     public fun isSubtypeOf(rawClass: ClassName): Boolean
 
 }

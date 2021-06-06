@@ -25,14 +25,7 @@ public class ModelCodegen(
 
     }
 
-    private fun CodegenField.makeCodegen(): FieldCodegen {
-        return when {
-            basicFieldContentType != null -> BasicFieldCodegen(model, this)
-            else -> TODO()
-        }
-    }
-
-    public fun generate() {
+    public fun generate(fieldGens: List<FieldCodegen>) {
         val file = FileSpec.builder(
             model.className.packageName,
             model.className.simpleNames.joinToString(postfix = "__reinhardt_generated", separator = "_")
@@ -77,7 +70,6 @@ public class ModelCodegen(
             entityClassCallParams = mutableListOf()
         )
 
-        val fieldGens = model.fields.sortedBy { !it.isPrimaryKey }.map { it.makeCodegen() }
         for (fieldGen in fieldGens) {
             fieldGen.generate(genContext)
         }

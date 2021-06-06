@@ -11,6 +11,7 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import dev.weiland.reinhardt.constants.FieldMarker
 import dev.weiland.reinhardt.gen.*
+import dev.weiland.reinhardt.gen.field.FieldCodegenFactories
 
 internal class KspProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
 
@@ -94,29 +95,37 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
             val fieldProperties = cls.declarations.filterIsInstance<KSPropertyDeclaration>()
                 .filter { fieldType.isAssignableFrom(it.type.resolve()) }
 
-            val fields = fieldProperties.mapNotNull { fieldProperty ->
-                makeCodegenField(fieldProperty)
-            }.toList()
             val codegenModel = CodegenModel(
                 ClassName.bestGuess(checkNotNull(cls.qualifiedName).asString()),
             )
-            ModelCodegen(codegenModel, codegenTarget).generate()
+            val fields = fieldProperties.mapNotNull { fieldProperty ->
+                makeCodegenField(codegenModel, fieldProperty)
+            }.sortedBy { (data, _) -> !data.isPrimaryKey }.map { (_, gen) -> gen }.toList()
+            ModelCodegen(codegenModel, codegenTarget).generate(fields)
             environment.logger.warn("Found fields: $fields")
         }
 
-        private fun makeCodegenField(property: KSPropertyDeclaration): CodegenField? {
+        private fun makeCodegenField(model: CodegenModel, property: KSPropertyDeclaration): Pair<CodegenField, FieldCodegen>? {
             val fieldResolvedType = property.type.resolve()
             if (!fieldType.isAssignableFrom(fieldResolvedType)) {
                 return null
             }
 
             val fieldData = CodegenField(
-                property.simpleName.asString(), property.isPrimaryKey(),
+                property.simpleName.asString(), property.isPrimaryKey(), fieldResolvedType.toKotlinPoet()
             )
             val lookup = object : FieldInfoLookup {
-                override fun lookupSupertype(rawClass: ClassName): TypeName? {
-                    val supertype = resolver.getClassDeclarationByName(rawClass.toKSName()) ?: return false
-                    return
+
+                override fun lookupPropertyType(propertyClassName: ClassName, propertyName: String): TypeName? {
+                    val propertyClass = resolver.getClassDeclarationByName(propertyClassName.toKSName()) ?: return null
+                    val lookupProperty = propertyClass.getDeclaredProperties().single { it.simpleName.getShortName() == propertyName }
+                    return lookupProperty.asMemberOf(fieldResolvedType).toKotlinPoet()
+                }
+
+                override fun lookupFunctionReturnType(functionClassName: ClassName, functionName: String): TypeName? {
+                    val functionClass = resolver.getClassDeclarationByName(functionClassName.toKSName()) ?: return null
+                    val lookupFunction = functionClass.getDeclaredFunctions().single { it.simpleName.getShortName() == functionName }
+                    return lookupFunction.asMemberOf(fieldResolvedType).returnType?.toKotlinPoet()
                 }
 
                 override fun isSubtypeOf(rawClass: ClassName): Boolean {
@@ -125,22 +134,9 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
                 }
             }
 
-            val entityProperties: List<CodegenEntityProperty>
-            val basicFieldContentType: KSType?
-            if (basicFieldType.isAssignableFrom(fieldResolvedType)) {
-                // TODO
-                val resolvedFieldDataType = basicFieldFromDb.asMemberOf(fieldResolvedType).returnType ?: return null
-                entityProperties = listOf(
-                    CodegenEntityProperty(
-                        property.simpleName.asString(),
-                        resolvedFieldDataType.toKotlinPoet()
-                    )
-                )
-                basicFieldContentType = resolvedFieldDataType
-            } else {
-                // TODO
-                entityProperties = listOf()
-                basicFieldContentType = null
+            val fieldCodegen = FieldCodegenFactories.getCodeGenerator(model, fieldData, lookup)
+            return fieldData to checkNotNull(fieldCodegen) {
+                "Failed to find code generator for field $fieldData"
             }
         }
 
