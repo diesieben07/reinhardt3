@@ -118,14 +118,22 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
 
                 override fun lookupPropertyType(propertyClassName: ClassName, propertyName: String): TypeName? {
                     val propertyClass = resolver.getClassDeclarationByName(propertyClassName.toKSName()) ?: return null
-                    val lookupProperty = propertyClass.getDeclaredProperties().single { it.simpleName.getShortName() == propertyName }
-                    return lookupProperty.asMemberOf(fieldResolvedType).toKotlinPoet()
+                    return if (propertyClass.asStarProjectedType().isAssignableFrom(fieldResolvedType)) {
+                        val lookupProperty = propertyClass.getDeclaredProperties().single { it.simpleName.getShortName() == propertyName }
+                        lookupProperty.asMemberOf(fieldResolvedType).toKotlinPoet()
+                    } else {
+                        null
+                    }
                 }
 
                 override fun lookupFunctionReturnType(functionClassName: ClassName, functionName: String): TypeName? {
                     val functionClass = resolver.getClassDeclarationByName(functionClassName.toKSName()) ?: return null
-                    val lookupFunction = functionClass.getDeclaredFunctions().single { it.simpleName.getShortName() == functionName }
-                    return lookupFunction.asMemberOf(fieldResolvedType).returnType?.toKotlinPoet()
+                    return if (functionClass.asStarProjectedType().isAssignableFrom(fieldResolvedType)) {
+                        val lookupFunction = functionClass.getDeclaredFunctions().single { it.simpleName.getShortName() == functionName }
+                        lookupFunction.asMemberOf(fieldResolvedType).returnType?.toKotlinPoet()
+                    } else {
+                        null
+                    }
                 }
 
                 override fun isSubtypeOf(rawClass: ClassName): Boolean {

@@ -12,9 +12,3 @@ public data class CodegenField(
     val isPrimaryKey: Boolean,
     val declaredType: TypeName,
 )
-
-
-public data class CodegenEntityProperty(
-    val name: String,
-    val type: TypeName
-)

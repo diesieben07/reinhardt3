@@ -15,7 +15,7 @@ object User : Model() {
     @PrimaryKey
     val id = TextField()
     val name = TextField().nullable()
-//    val parent = ForeignKey(User).nullable()
+    val parent = ForeignKey(User).nullable()
 }
 
 // following is generated code
@@ -81,6 +81,6 @@ object User : Model() {
 //
 @OptIn(ExperimentalTime::class)
 fun main() {
-    val e: UserEntity = TODO()
-    print(ServiceLoader.load(SymbolProcessorProvider::class.java).toList())
+//    val e: UserEntity = TODO()
+//    print(ServiceLoader.load(SymbolProcessorProvider::class.java).toList())
 }
