@@ -15,5 +15,6 @@ public interface FieldInfoLookup {
     public fun lookupFunctionReturnType(functionClassName: ClassName, functionName: String): TypeName?
     public fun isSubtypeOf(rawClass: ClassName): Boolean
     public fun hasAnnotation(annotationClassName: ClassName): Boolean
+    public fun lookupPrimaryKeyInfo(modelClassName: ClassName): PrimaryKeyInfo?
 
 }

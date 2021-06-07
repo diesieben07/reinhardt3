@@ -21,9 +21,12 @@ internal class BuiltinFieldGenFactory : FieldCodegenFactory {
         }
         val relatedFieldModel = lookup.lookupPropertyType(relatedFieldClassName, "referencedModel")
         if (relatedFieldModel is ClassName) {
+            val primaryKeyType = checkNotNull(lookup.lookupPrimaryKeyInfo(relatedFieldModel)) {
+                "Related model has no primary key?"
+            }
             when {
-                lookup.isSubtypeOf(foreignKeyClassName) -> return ForeignKeyFieldCodegen(model, field, relatedFieldModel, false, lookup.hasAnnotation(eagerClassName))
-                lookup.isSubtypeOf(nullableForeignKeyClassName) -> return ForeignKeyFieldCodegen(model, field, relatedFieldModel, true, lookup.hasAnnotation(eagerClassName))
+                lookup.isSubtypeOf(foreignKeyClassName) -> return ForeignKeyFieldCodegen(model, field, relatedFieldModel, primaryKeyType, false, lookup.hasAnnotation(eagerClassName))
+                lookup.isSubtypeOf(nullableForeignKeyClassName) -> return ForeignKeyFieldCodegen(model, field, relatedFieldModel, primaryKeyType, true, lookup.hasAnnotation(eagerClassName))
             }
         }
 

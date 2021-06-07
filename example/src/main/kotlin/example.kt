@@ -19,6 +19,8 @@ object User : Model() {
     val nullableParent = ForeignKey(User).nullable()
     @Eager
     val parent = ForeignKey(User)
+
+    val lazyParent = ForeignKey(User).nullable()
 }
 
 // following is generated code

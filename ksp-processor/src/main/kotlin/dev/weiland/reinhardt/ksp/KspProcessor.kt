@@ -15,14 +15,11 @@ import dev.weiland.reinhardt.gen.field.FieldCodegenFactories
 
 internal class KspProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
 
-
-
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val modelClass = resolver.getClassDeclarationByName(
             resolver.getKSNameFromString("dev.weiland.reinhardt.model.Model")
         ) ?: error("Failed to find model class")
         val modelType = modelClass.asStarProjectedType()
-
 
         environment.logger.warn("Processor is running")
 
@@ -146,6 +143,22 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
                     return property.annotations.any {
                         it.shortName.getShortName() == ksName.getShortName() && it.annotationType.resolve().declaration.qualifiedName == ksName
                     }
+                }
+
+                override fun lookupPrimaryKeyInfo(modelClassName: ClassName): PrimaryKeyInfo? {
+                    // TODO this is terrible, we need caching here
+                    // and also not hardcoding BasicField
+                    val modelClass = resolver.getClassDeclarationByName(modelClassName.toKSName()) ?: return null
+                    for (modelClassProperty in modelClass.getDeclaredProperties()) {
+                        if (modelClassProperty.hasAnnotation(primaryKeyAnnotationName)) {
+                            val resolvedPropertyType = modelClassProperty.type.resolve()
+                            check(basicFieldType.isAssignableFrom(resolvedPropertyType))
+                            return basicFieldFromDb.asMemberOf(resolvedPropertyType).returnType?.toKotlinPoet()?.let { pkType ->
+                                PrimaryKeyInfo(modelClassProperty.simpleName.getShortName(), pkType)
+                            }
+                        }
+                    }
+                    return null
                 }
             }
 

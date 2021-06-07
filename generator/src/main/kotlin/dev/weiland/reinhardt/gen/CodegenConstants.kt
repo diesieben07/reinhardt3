@@ -12,4 +12,8 @@ public object CodegenConstants {
         return modelClass.peerClass(modelClass.simpleName + "Entity")
     }
 
+    public fun getIdFieldName(modelClass: ClassName, targetModelClass: ClassName, originalFieldName: String): String {
+        return originalFieldName + "Id"
+    }
+
 }
