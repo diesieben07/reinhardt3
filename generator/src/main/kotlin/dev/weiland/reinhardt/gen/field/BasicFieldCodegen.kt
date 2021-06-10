@@ -9,6 +9,11 @@ public class BasicFieldCodegen(
     private val basicFieldContentType: TypeName,
     ) : FieldCodegen {
 
+    override val info: CodegenField
+        get() = this.field
+    override val primaryKeyType: TypeName?
+        get() = if (this.field.isPrimaryKey) basicFieldContentType else null
+
     override fun generate(ctx: FieldGenContext) {
         val basicFieldType = basicFieldContentType
         ctx.entityInterface.addProperty(

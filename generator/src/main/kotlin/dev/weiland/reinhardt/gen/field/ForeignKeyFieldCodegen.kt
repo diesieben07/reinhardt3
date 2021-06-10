@@ -11,6 +11,10 @@ internal class ForeignKeyFieldCodegen(
     val nullable: Boolean,
     val eager: Boolean
 ) : FieldCodegen {
+
+    override val info: CodegenField
+        get() = this.field
+
     override fun generate(ctx: FieldGenContext) {
         val relatedEntityReader = CodegenConstants.getEntityReaderClassName(relatedFieldModel)
         val relatedEntity = CodegenConstants.getEntityInterfaceClassName(relatedFieldModel)

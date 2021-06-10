@@ -8,6 +8,7 @@ import kotlinx.coroutines.*
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.*
+import kotlin.reflect.KClass
 import kotlin.time.*
 
 
@@ -21,6 +22,15 @@ object User : Model() {
     val parent = ForeignKey(User)
 
     val lazyParent = ForeignKey(User).nullable()
+}
+
+
+object Test : Model() {
+
+    val foobar = TextField()
+    @Eager
+    val user = ForeignKey(User)
+
 }
 
 // following is generated code

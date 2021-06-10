@@ -31,9 +31,14 @@ public interface ModelReader<M : Model, R : Any> {
     public fun readLazyEntity(row: DbRow, columnPrefix: String): R? {
         TODO()
     }
+}
 
+public interface ModelCompanion<M : Model, E : Any, ID : Any> : ModelReader<M, E> {
+
+    public val primaryKeyField: BasicField<ID>?
 
 }
+
 
 public interface QuerySet<R> : Iterable<R> {
 

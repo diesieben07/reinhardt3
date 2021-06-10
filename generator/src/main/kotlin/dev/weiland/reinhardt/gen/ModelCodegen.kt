@@ -2,7 +2,6 @@ package dev.weiland.reinhardt.gen
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import dev.weiland.reinhardt.gen.field.BasicFieldCodegen
 
 public class ModelCodegen(
     private val model: CodegenModel,
@@ -18,10 +17,12 @@ public class ModelCodegen(
         val fieldClassName = ClassName(modelPackage, "Field")
         val basicFieldClassName = ClassName(modelPackage, "BasicField")
         val modelReaderClassName = ClassName(modelPackage, "ModelReader")
+        val modelCompanionClassName = ClassName(modelPackage, "ModelCompanion")
         val dbRowClassName = ClassName(dbPackage, "DbRow")
 
         const val modelReaderReadEntityNullable = "readEntityNullable"
         const val dbRowDatabaseProperty = "database"
+        const val primaryKeyFieldName = "primaryKeyField"
 
     }
 
@@ -40,11 +41,7 @@ public class ModelCodegen(
         entityClass.addSuperinterface(entityInterfaceClassName)
 
         val entityReaderClassName = model.className.peerClass(model.className.simpleName + "EntityR")
-        val modelReaderSuperclass = modelReaderClassName.parameterizedBy(
-            model.className, entityInterfaceClassName
-        )
-        val entityReaderClass = TypeSpec.objectBuilder(entityReaderClassName)
-            .addSuperinterface(modelReaderSuperclass)
+        val modelCompanionClass = TypeSpec.objectBuilder(entityReaderClassName)
 
         val entityReaderReadFun = FunSpec.builder(modelReaderReadEntityNullable)
             .addModifiers(KModifier.OVERRIDE)
@@ -65,14 +62,42 @@ public class ModelCodegen(
         val genContext = FieldGenContext(
             entityInterfaceName = entityInterfaceClassName, entityInterface = entityInterface,
             entityClassName = entityClassClassName, entityClass = entityClass, entityClassConstructor = entityClassConstructor,
-            entityReaderName = entityReaderClassName, entityReader = entityReaderClass,
+            entityCompanionName = entityReaderClassName, entityCompanion = modelCompanionClass,
             entityReaderReadNullableFun = entityReaderReadFun,
             entityClassCallParams = mutableListOf()
         )
 
+        var foundPk: FieldCodegen? = null
         for (fieldGen in fieldGens) {
             fieldGen.generate(genContext)
+            val primaryKeyType = fieldGen.primaryKeyType
+            if (primaryKeyType != null) {
+                check(foundPk == null) { "Duplicate primary key for model $model"}
+                foundPk = fieldGen
+            }
         }
+
+        modelCompanionClass.addSuperinterface(
+            modelCompanionClassName.parameterizedBy(
+                model.className, entityInterfaceClassName, foundPk?.primaryKeyType ?: ANY
+            )
+        )
+
+        modelCompanionClass.addProperty(
+            PropertySpec.builder(
+                primaryKeyFieldName,
+                basicFieldClassName.parameterizedBy(foundPk?.primaryKeyType ?: ANY).copy(nullable = foundPk == null),
+                KModifier.OVERRIDE
+            ).getter(
+                FunSpec.getterBuilder().let { getterBuilder ->
+                    if (foundPk == null) {
+                        getterBuilder.addCode("return null")
+                    } else {
+                        getterBuilder.addCode("return %T.%N", model.className, foundPk.info.name)
+                    }
+                }.build()
+            ).build()
+        )
 
         entityReaderReadFun.addCode(
             "return %T(row.database", entityClassClassName
@@ -83,14 +108,14 @@ public class ModelCodegen(
         }
         entityReaderReadFun.addCode(")")
 
-        entityReaderClass.addFunction(entityReaderReadFun.build())
+        modelCompanionClass.addFunction(entityReaderReadFun.build())
 
         entityClass.primaryConstructor(entityClassConstructor.build())
 
 //        file.addFunction(primaryKeyFun.build())
         file.addType(entityInterface.build())
         file.addType(entityClass.build())
-        file.addType(entityReaderClass.build())
+        file.addType(modelCompanionClass.build())
 
         target.accept(file.build())
     }

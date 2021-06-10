@@ -11,8 +11,8 @@ public data class FieldGenContext(
     val entityClassName: ClassName,
     val entityClass: TypeSpec.Builder,
     val entityClassConstructor: FunSpec.Builder,
-    val entityReaderName: ClassName,
-    val entityReader: TypeSpec.Builder,
+    val entityCompanionName: ClassName,
+    val entityCompanion: TypeSpec.Builder,
     val entityReaderReadNullableFun: FunSpec.Builder,
     val entityClassCallParams: MutableList<CodeBlock>
 )
