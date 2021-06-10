@@ -18,6 +18,7 @@ public class ModelCodegen(
         val basicFieldClassName = ClassName(modelPackage, "BasicField")
         val modelReaderClassName = ClassName(modelPackage, "ModelReader")
         val modelCompanionClassName = ClassName(modelPackage, "ModelCompanion")
+        val modelCompanionWithPkClassName = ClassName(modelPackage, "ModelCompanionWithPK")
         val dbRowClassName = ClassName(dbPackage, "DbRow")
 
         const val modelReaderReadEntityNullable = "readEntityNullable"
@@ -42,6 +43,9 @@ public class ModelCodegen(
 
         val entityReaderClassName = model.className.peerClass(model.className.simpleName + "EntityR")
         val modelCompanionClass = TypeSpec.objectBuilder(entityReaderClassName)
+            .addSuperinterface(
+                modelCompanionClassName.parameterizedBy(model.className, entityInterfaceClassName)
+            )
 
         val entityReaderReadFun = FunSpec.builder(modelReaderReadEntityNullable)
             .addModifiers(KModifier.OVERRIDE)
@@ -77,27 +81,24 @@ public class ModelCodegen(
             }
         }
 
-        modelCompanionClass.addSuperinterface(
-            modelCompanionClassName.parameterizedBy(
-                model.className, entityInterfaceClassName, foundPk?.primaryKeyType ?: ANY
+        if (foundPk != null) {
+            val primaryKeyType = checkNotNull(foundPk.primaryKeyType)
+            modelCompanionClass.addSuperinterface(
+                modelCompanionWithPkClassName.parameterizedBy(
+                    model.className, entityInterfaceClassName, primaryKeyType
+                )
             )
-        )
 
-        modelCompanionClass.addProperty(
-            PropertySpec.builder(
-                primaryKeyFieldName,
-                basicFieldClassName.parameterizedBy(foundPk?.primaryKeyType ?: ANY).copy(nullable = foundPk == null),
-                KModifier.OVERRIDE
-            ).getter(
-                FunSpec.getterBuilder().let { getterBuilder ->
-                    if (foundPk == null) {
-                        getterBuilder.addCode("return null")
-                    } else {
-                        getterBuilder.addCode("return %T.%N", model.className, foundPk.info.name)
-                    }
-                }.build()
-            ).build()
-        )
+            modelCompanionClass.addProperty(
+                PropertySpec.builder(
+                    primaryKeyFieldName,
+                    basicFieldClassName.parameterizedBy(primaryKeyType),
+                    KModifier.OVERRIDE
+                ).getter(
+                    FunSpec.getterBuilder().addCode("return %T.%N", model.className, foundPk.info.name).build()
+                ).build()
+            )
+        }
 
         entityReaderReadFun.addCode(
             "return %T(row.database", entityClassClassName

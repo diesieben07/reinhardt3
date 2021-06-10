@@ -33,10 +33,10 @@ public interface ModelReader<M : Model, R : Any> {
     }
 }
 
-public interface ModelCompanion<M : Model, E : Any, ID : Any> : ModelReader<M, E> {
+public interface ModelCompanion<M : Model, E : Any> : ModelReader<M, E>
 
+public interface ModelCompanionWithPK<M : Model, E : Any, ID : Any> : ModelCompanion<M, E> {
     public val primaryKeyField: BasicField<ID>?
-
 }
 
 
