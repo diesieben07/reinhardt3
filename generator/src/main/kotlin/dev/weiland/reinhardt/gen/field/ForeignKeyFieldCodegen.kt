@@ -1,6 +1,7 @@
 package dev.weiland.reinhardt.gen.field
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import dev.weiland.reinhardt.gen.*
 
 internal class ForeignKeyFieldCodegen(
@@ -11,6 +12,13 @@ internal class ForeignKeyFieldCodegen(
     val nullable: Boolean,
     val eager: Boolean
 ) : FieldCodegen {
+
+    private companion object {
+        val coroutineDeferredClassName = ClassName("kotlinx.coroutines", "Deferred")
+        val coroutineCompletableDeferredClassName = ClassName("kotlinx.coroutines", "CompletableDeferred")
+        val coroutineScopeMemberName = MemberName("kotlinx.coroutines", "coroutineScope")
+        val asyncMemberName = MemberName("kotlinx.coroutines", "async")
+    }
 
     override val info: CodegenField
         get() = this.field
@@ -75,11 +83,34 @@ internal class ForeignKeyFieldCodegen(
                     .build()
             )
 
+            ctx.entityClass.addProperty(
+                PropertySpec.builder(field.name, coroutineDeferredClassName.parameterizedBy(relEntityMaybeNull).copy(nullable = true))
+                    .initializer("null")
+                    .mutable(true)
+                    .build()
+            )
+
+            val fieldLazyGetterFun = FunSpec.builder(field.name)
+                .addModifiers(KModifier.SUSPEND, KModifier.OVERRIDE)
+                .returns(relEntityMaybeNull)
+
+            if (nullable) {
+                fieldLazyGetterFun.addCode(
+                    "if (%N == null) return null\n", idFieldName
+                )
+            }
+
+            fieldLazyGetterFun.addCode(
+                "val d = %N ?: _db.%M·{", field.name, asyncMemberName
+            )
+            fieldLazyGetterFun.addCode(
+                "_db.getEntity(%T, %N)", relatedEntityReader, idFieldName
+            )
+            fieldLazyGetterFun.addCode(" }.%M·{ %N = it }", MemberName("kotlin", "also"), field.name)
+            fieldLazyGetterFun.addCode("\nreturn d.await()")
+
             ctx.entityClass.addFunction(
-                FunSpec.builder(field.name)
-                    .addModifiers(KModifier.SUSPEND, KModifier.OVERRIDE)
-                    .returns(relEntityMaybeNull)
-                    .addCode("%M()", MemberName("kotlin", "TODO"))
+                fieldLazyGetterFun
                     .build()
             )
         }

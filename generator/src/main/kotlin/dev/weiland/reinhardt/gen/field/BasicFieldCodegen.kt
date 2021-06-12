@@ -7,7 +7,7 @@ public class BasicFieldCodegen(
     private val model: CodegenModel,
     private val field: CodegenField,
     private val basicFieldContentType: TypeName,
-    ) : FieldCodegen {
+) : FieldCodegen {
 
     override val info: CodegenField
         get() = this.field

@@ -28,15 +28,19 @@ public interface ModelReader<M : Model, R : Any> {
     }
 
     public fun readEntityNullable(row: DbRow, columnPrefix: String): R?
-    public fun readLazyEntity(row: DbRow, columnPrefix: String): R? {
-        TODO()
-    }
 }
+
+public interface ModelReaderWithPK<M : Model, R : Any, PK : Any> {
+
+    public fun readPrimaryKeyNullable(row: DbRow, columnPrefix: String): PK?
+
+}
+
 
 public interface ModelCompanion<M : Model, E : Any> : ModelReader<M, E>
 
-public interface ModelCompanionWithPK<M : Model, E : Any, ID : Any> : ModelCompanion<M, E> {
-    public val primaryKeyField: BasicField<ID>?
+public interface ModelCompanionWithPK<M : Model, E : Any, PK : Any> : ModelCompanion<M, E>, ModelReaderWithPK<M, E, PK> {
+    public val primaryKeyField: BasicField<PK>?
 }
 
 
