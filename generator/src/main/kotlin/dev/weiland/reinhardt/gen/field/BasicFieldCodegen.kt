@@ -33,6 +33,12 @@ public class BasicFieldCodegen(
                 "val %N = %T.%N.fromDbNullable(row, columnPrefix + %S) ?: return null\n",
                 field.name, model.className, field.name, field.name
             )
+
+            val entityReaderReadPKNullableFun = checkNotNull(ctx.entityReaderReadPKNullableFun)
+            entityReaderReadPKNullableFun.addCode(
+                "return %T.%N.fromDbNullable(row, columnPrefix + %S)",
+                model.className, field.name, field.name
+            )
         } else {
             ctx.entityReaderReadNullableFun.addCode(
                 "val %N = %T.%N.fromDb(row, columnPrefix + %S)\n",

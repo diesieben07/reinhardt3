@@ -32,6 +32,11 @@ public interface ModelReader<M : Model, R : Any> {
 
 public interface ModelReaderWithPK<M : Model, R : Any, PK : Any> {
 
+    public fun readPrimaryKey(row: DbRow, columnPrefix: String): PK {
+        return checkNotNull(readPrimaryKeyNullable(row, columnPrefix)) {
+            "Primary Key was null unexpectedly"
+        }
+    }
     public fun readPrimaryKeyNullable(row: DbRow, columnPrefix: String): PK?
 
 }

@@ -22,6 +22,7 @@ public class ModelCodegen(
         val dbRowClassName = ClassName(dbPackage, "DbRow")
 
         const val modelReaderReadEntityNullable = "readEntityNullable"
+        const val modelReaderReadPKNullable = "readPrimaryKeyNullable"
         const val dbRowDatabaseProperty = "database"
         const val primaryKeyFieldName = "primaryKeyField"
 
@@ -63,22 +64,31 @@ public class ModelCodegen(
             ).initializer("_db").build()
         )
 
-        val genContext = FieldGenContext(
+        var genContext = FieldGenContext(
             entityInterfaceName = entityInterfaceClassName, entityInterface = entityInterface,
             entityClassName = entityClassClassName, entityClass = entityClass, entityClassConstructor = entityClassConstructor,
             entityCompanionName = entityReaderClassName, entityCompanion = modelCompanionClass,
             entityReaderReadNullableFun = entityReaderReadFun,
-            entityClassCallParams = mutableListOf()
+            entityClassCallParams = mutableListOf(),
+            entityReaderReadPKNullableFun = null
         )
 
         var foundPk: FieldCodegen? = null
         for (fieldGen in fieldGens) {
-            fieldGen.generate(genContext)
             val primaryKeyType = fieldGen.primaryKeyType
             if (primaryKeyType != null) {
                 check(foundPk == null) { "Duplicate primary key for model $model"}
                 foundPk = fieldGen
+
+                val entityReaderReadPKNullableFun = FunSpec.builder(modelReaderReadPKNullable)
+                    .addModifiers(KModifier.OVERRIDE)
+                    .returns(primaryKeyType.copy(nullable = true))
+                    .addParameter("row", dbRowClassName)
+                    .addParameter("columnPrefix", STRING)
+
+                genContext = genContext.copy(entityReaderReadPKNullableFun = entityReaderReadPKNullableFun)
             }
+            fieldGen.generate(genContext)
         }
 
         if (foundPk != null) {
@@ -97,6 +107,10 @@ public class ModelCodegen(
                 ).getter(
                     FunSpec.getterBuilder().addCode("return %T.%N", model.className, foundPk.info.name).build()
                 ).build()
+            )
+
+            modelCompanionClass.addFunction(
+                checkNotNull(genContext.entityReaderReadPKNullableFun).build()
             )
         }
 

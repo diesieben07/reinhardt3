@@ -74,7 +74,12 @@ internal class ForeignKeyFieldCodegen(
             ctx.entityClassConstructor.addParameter(
                 idFieldName, relatedFieldContentTypeMaybeNull
             )
-            ctx.entityClassCallParams.add(CodeBlock.of("%M()", MemberName("kotlin", "TODO")))
+
+            ctx.entityReaderReadNullableFun.addCode(
+                "val %N = %T.%N(row, columnPrefix + %S)\n",
+                field.name, relatedEntityReader, if (nullable) "readPrimaryKeyNullable" else "readPrimaryKey", field.name + "_"
+            )
+            ctx.entityClassCallParams += CodeBlock.of("%N", field.name)
 
             ctx.entityInterface.addFunction(
                 FunSpec.builder(field.name)
@@ -84,9 +89,26 @@ internal class ForeignKeyFieldCodegen(
             )
 
             ctx.entityClass.addProperty(
-                PropertySpec.builder(field.name, coroutineDeferredClassName.parameterizedBy(relEntityMaybeNull).copy(nullable = true))
-                    .initializer("null")
-                    .mutable(true)
+                PropertySpec.builder(field.name, coroutineDeferredClassName.parameterizedBy(relEntityMaybeNull))
+                    .addModifiers(KModifier.PRIVATE)
+                    .delegate(
+                        """
+                            %M·{
+                                if (%N == null)·{
+                                    %M(null)
+                                }·else·{
+                                    _db.%M·{
+                                        _db.getEntity(%T, %N)
+                                    }
+                                }
+                            }
+                        """.trimIndent(),
+                        MemberName("kotlin", "lazy"),
+                        idFieldName,
+                        MemberName("kotlinx.coroutines", "CompletableDeferred"),
+                        asyncMemberName,
+                        relatedEntityReader, idFieldName
+                    )
                     .build()
             )
 
@@ -99,15 +121,18 @@ internal class ForeignKeyFieldCodegen(
                     "if (%N == null) return null\n", idFieldName
                 )
             }
+            fieldLazyGetterFun.addCode(
+                "return %N.await()", field.name
+            )
 
-            fieldLazyGetterFun.addCode(
-                "val d = %N ?: _db.%M·{", field.name, asyncMemberName
-            )
-            fieldLazyGetterFun.addCode(
-                "_db.getEntity(%T, %N)", relatedEntityReader, idFieldName
-            )
-            fieldLazyGetterFun.addCode(" }.%M·{ %N = it }", MemberName("kotlin", "also"), field.name)
-            fieldLazyGetterFun.addCode("\nreturn d.await()")
+//            fieldLazyGetterFun.addCode(
+//                "val d = %N ?: _db.%M·{", field.name, asyncMemberName
+//            )
+//            fieldLazyGetterFun.addCode(
+//                "_db.getEntity(%T, %N)", relatedEntityReader, idFieldName
+//            )
+//            fieldLazyGetterFun.addCode(" }.%M·{ %N = it }", MemberName("kotlin", "also"), field.name)
+//            fieldLazyGetterFun.addCode("\nreturn d.await()")
 
             ctx.entityClass.addFunction(
                 fieldLazyGetterFun
