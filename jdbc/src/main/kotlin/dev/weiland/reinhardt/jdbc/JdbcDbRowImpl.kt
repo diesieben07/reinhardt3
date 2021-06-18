@@ -1,5 +1,6 @@
 package dev.weiland.reinhardt.jdbc
 
+import dev.weiland.reinhardt.db.Database
 import dev.weiland.reinhardt.db.DbResults
 import java.sql.ResultSet
 

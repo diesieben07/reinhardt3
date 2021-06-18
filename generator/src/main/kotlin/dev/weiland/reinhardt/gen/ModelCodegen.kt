@@ -2,6 +2,7 @@ package dev.weiland.reinhardt.gen
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import dev.weiland.reinhardt.constants.KnownNames
 
 public class ModelCodegen(
     private val model: CodegenModel,
@@ -17,6 +18,8 @@ public class ModelCodegen(
         val fieldClassName = ClassName(modelPackage, "Field")
         val basicFieldClassName = ClassName(modelPackage, "BasicField")
         val modelReaderClassName = ClassName(modelPackage, "ModelReader")
+        val modelReaderWithPkClassName = ClassName(modelPackage, "ModelReaderWithPK")
+
         val modelCompanionClassName = ClassName(modelPackage, "ModelCompanion")
         val modelCompanionWithPkClassName = ClassName(modelPackage, "ModelCompanionWithPK")
         val dbRowClassName = ClassName(dbPackage, "DbRow")
@@ -25,6 +28,8 @@ public class ModelCodegen(
         const val modelReaderReadPKNullable = "readPrimaryKeyNullable"
         const val dbRowDatabaseProperty = "database"
         const val primaryKeyFieldName = "primaryKeyField"
+
+        val kotlinJvmNameClassName = ClassName("kotlin.jvm", "JvmName")
 
     }
 
@@ -43,13 +48,16 @@ public class ModelCodegen(
         entityClass.addSuperinterface(entityInterfaceClassName)
 
         val entityReaderClassName = model.className.peerClass(model.className.simpleName + "EntityR")
+
+        val entityReaderGenericType = modelReaderClassName.parameterizedBy(model.className, entityInterfaceClassName)
+        val modelCompanionGenericType = modelCompanionClassName.parameterizedBy(model.className, entityInterfaceClassName)
         val modelCompanionClass = TypeSpec.objectBuilder(entityReaderClassName)
-            .addSuperinterface(
-                modelCompanionClassName.parameterizedBy(model.className, entityInterfaceClassName)
-            )
+            .addSuperinterface(modelCompanionGenericType)
+            .addSuperinterface(entityReaderGenericType)
 
         val entityReaderReadFun = FunSpec.builder(modelReaderReadEntityNullable)
             .addModifiers(KModifier.OVERRIDE)
+            .addParameter("database", databaseClassName)
             .addParameter("row", dbRowClassName)
             .addParameter("columnPrefix", STRING)
             .returns(entityInterfaceClassName.copy(nullable = true))
@@ -83,6 +91,7 @@ public class ModelCodegen(
                 val entityReaderReadPKNullableFun = FunSpec.builder(modelReaderReadPKNullable)
                     .addModifiers(KModifier.OVERRIDE)
                     .returns(primaryKeyType.copy(nullable = true))
+                    .addParameter("database", databaseClassName)
                     .addParameter("row", dbRowClassName)
                     .addParameter("columnPrefix", STRING)
 
@@ -91,13 +100,17 @@ public class ModelCodegen(
             fieldGen.generate(genContext)
         }
 
-        if (foundPk != null) {
+        val (selectedEntityReaderSupertype, selectedModelCompanionSupertype) = if (foundPk != null) {
             val primaryKeyType = checkNotNull(foundPk.primaryKeyType)
-            modelCompanionClass.addSuperinterface(
-                modelCompanionWithPkClassName.parameterizedBy(
-                    model.className, entityInterfaceClassName, primaryKeyType
-                )
+            val entityReaderGenericTypeWithPK = modelReaderWithPkClassName.parameterizedBy(
+                model.className, entityInterfaceClassName, primaryKeyType
             )
+            val modelCompanionGenericTypeWithPK = modelCompanionWithPkClassName.parameterizedBy(
+                model.className, entityInterfaceClassName, primaryKeyType
+            )
+            modelCompanionClass
+                .addSuperinterface(modelCompanionGenericTypeWithPK)
+                .addSuperinterface(entityReaderGenericTypeWithPK)
 
             modelCompanionClass.addProperty(
                 PropertySpec.builder(
@@ -112,10 +125,13 @@ public class ModelCodegen(
             modelCompanionClass.addFunction(
                 checkNotNull(genContext.entityReaderReadPKNullableFun).build()
             )
+            Pair(entityReaderGenericTypeWithPK, modelCompanionGenericTypeWithPK)
+        } else {
+            Pair(entityReaderGenericType, modelCompanionGenericType)
         }
 
         entityReaderReadFun.addCode(
-            "return %T(row.database", entityClassClassName
+            "return %T(database", entityClassClassName
         )
         for (param in genContext.entityClassCallParams) {
             entityReaderReadFun.addCode(", ")
@@ -127,10 +143,30 @@ public class ModelCodegen(
 
         entityClass.primaryConstructor(entityClassConstructor.build())
 
+        val entityReaderFun = FunSpec.builder(CodegenConstants.ENTITY_READER_FUN)
+            .addCode("return %T", entityReaderClassName)
+            .receiver(model.className)
+            .returns(selectedEntityReaderSupertype)
+            .build()
+
+        val modelCompanionFun = FunSpec.builder(CodegenConstants.MODEL_COMPANION_FUN)
+            .addCode("return %T", entityReaderClassName)
+            .receiver(model.className)
+            .returns(selectedModelCompanionSupertype)
+            .build()
+
 //        file.addFunction(primaryKeyFun.build())
         file.addType(entityInterface.build())
         file.addType(entityClass.build())
         file.addType(modelCompanionClass.build())
+        file.addFunction(entityReaderFun)
+        file.addFunction(modelCompanionFun)
+
+        file.addAnnotation(
+            AnnotationSpec.builder(kotlinJvmNameClassName)
+                .addMember("%S", KnownNames.getGeneratedFileClassName(model.className.reflectionName()))
+                .build()
+        )
 
         target.accept(file.build())
     }

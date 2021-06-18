@@ -1,43 +1,44 @@
 package dev.weiland.reinhardt.model
 
 import dev.weiland.reinhardt.ReinhardtInternalApi
+import dev.weiland.reinhardt.db.Database
 import dev.weiland.reinhardt.db.DbRow
 
 @Retention(AnnotationRetention.BINARY)
 @Target(AnnotationTarget.CLASS)
 public annotation class ModelAnnotation
 
-public interface Database {
-
-    public fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF>
-
-}
-
-public object DummyDatabase : Database {
-    override fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF> {
-        return ModelQuerySetImpl(modelRef)
-    }
-}
+//public interface Database {
+//
+//    public fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF>
+//
+//}
+//
+//public object DummyDatabase : Database {
+//    override fun <M : Model, ME : Any, REF : ModelRef<M, ME>> all(modelRef: REF, reader: ModelReader<M, ME>): ModelQuerySet<M, ME, REF> {
+//        return ModelQuerySetImpl(modelRef)
+//    }
+//}
 
 public interface ModelReader<M : Model, R : Any> {
 
-    public fun readEntity(row: DbRow, columnPrefix: String): R {
-        return checkNotNull(readEntityNullable(row, columnPrefix)) {
+    public fun readEntity(database: Database, row: DbRow, columnPrefix: String): R {
+        return checkNotNull(readEntityNullable(database, row, columnPrefix)) {
             "Entity was null unexpectedly"
         }
     }
 
-    public fun readEntityNullable(row: DbRow, columnPrefix: String): R?
+    public fun readEntityNullable(database: Database, row: DbRow, columnPrefix: String): R?
 }
 
 public interface ModelReaderWithPK<M : Model, R : Any, PK : Any> {
 
-    public fun readPrimaryKey(row: DbRow, columnPrefix: String): PK {
-        return checkNotNull(readPrimaryKeyNullable(row, columnPrefix)) {
+    public fun readPrimaryKey(database: Database, row: DbRow, columnPrefix: String): PK {
+        return checkNotNull(readPrimaryKeyNullable(database, row, columnPrefix)) {
             "Primary Key was null unexpectedly"
         }
     }
-    public fun readPrimaryKeyNullable(row: DbRow, columnPrefix: String): PK?
+    public fun readPrimaryKeyNullable(database: Database, row: DbRow, columnPrefix: String): PK?
 
 }
 
@@ -190,5 +191,5 @@ public abstract class ModelRef<M : Model, ME : Any>(private val through: FieldRe
 
 }
 
-public val db: Database = DummyDatabase
+//public val db: Database = DummyDatabase
 

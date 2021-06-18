@@ -16,4 +16,7 @@ public object CodegenConstants {
         return originalFieldName + "Id"
     }
 
+    public const val ENTITY_READER_FUN: String = "entityReader"
+    public const val MODEL_COMPANION_FUN: String = "objects"
+
 }

@@ -5,7 +5,6 @@ import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
 import com.squareup.kotlinpoet.metadata.specs.ClassInspector
 import dev.weiland.reinhardt.constants.KnownNames
-import dev.weiland.reinhardt.model.state.ModelState
 import java.nio.file.Path
 import java.nio.file.Paths
 import javax.annotation.processing.*

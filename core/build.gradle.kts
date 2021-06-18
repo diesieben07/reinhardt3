@@ -18,6 +18,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+                implementation(project(":class-names"))
             }
         }
         val jvmMain by getting {

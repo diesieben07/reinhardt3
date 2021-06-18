@@ -1,5 +1,5 @@
 rootProject.name = "reinhardt"
-include("dbgen")
+//include("dbgen")
 include("core")
 include("postgres")
 include("processor")

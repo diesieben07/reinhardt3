@@ -19,12 +19,23 @@ public object KnownNames {
     private const val ENTITY_INTERFACE_PREFIX = "E"
     private const val ENTITY_LAZY_PREFIX = "L"
 
+    public const val MODEL_COMPANION_FUN: String = "objects"
+
     private fun modelClassDerivedName(modelClassName: ClassName, prefix: String = "", postfix: String = ""): ClassName {
         return modelClassName.peerClass(modelClassName.simpleNames.joinToString(separator = "_", prefix = prefix, postfix = postfix))
     }
 
     public fun makeRefClassName(modelClassName: ClassName): ClassName {
         return modelClassDerivedName(modelClassName, postfix = REF_CLASS_POSTFIX)
+    }
+
+    public fun getGeneratedFileClassName(modelClassQualifiedName: String, includePackage: Boolean = false): String {
+        val modelClassSimpleName = modelClassQualifiedName.substringAfterLast('.')
+        val generatedSimpleName = modelClassSimpleName + "__reinhardt_generated"
+        return when {
+            includePackage && modelClassQualifiedName.contains('.') -> modelClassQualifiedName.substringBeforeLast('.') + '.' + generatedSimpleName
+            else -> generatedSimpleName
+        }
     }
 
 }

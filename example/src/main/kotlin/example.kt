@@ -96,6 +96,10 @@ object Test : Model() {
 //
 @OptIn(ExperimentalTime::class)
 fun main() {
+    println(User.objects())
+    println(User.getModelCompanion())
 //    val e: UserEntity = TODO()
 //    print(ServiceLoader.load(SymbolProcessorProvider::class.java).toList())
 }
+
+

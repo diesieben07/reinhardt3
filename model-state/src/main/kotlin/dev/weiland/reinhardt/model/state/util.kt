@@ -1,5 +1,7 @@
 package dev.weiland.reinhardt.model.state
 
+import kotlinx.serialization.Serializable
+
 //import com.squareup.kotlinpoet.*
 //import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 //import com.squareup.kotlinpoet.metadata.*
@@ -87,3 +89,6 @@ package dev.weiland.reinhardt.model.state
 //        return null
 //    }
 //}
+
+@Serializable
+public class Dummy(public val x: Array<String>)
