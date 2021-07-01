@@ -1,6 +1,8 @@
 package dev.weiland.reinhardt.gen.field
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import dev.weiland.reinhardt.constants.KnownNames
 import dev.weiland.reinhardt.gen.*
 
 public class BasicFieldCodegen(
@@ -46,6 +48,18 @@ public class BasicFieldCodegen(
             )
         }
         ctx.entityClassCallParams += CodeBlock.of("%N", field.name)
+
+        ctx.modelExpressionContainerClass?.let { modelExpressionContainerClass ->
+            val fieldExpressionType = KnownNames.FIELD_EXPRESSION_CLASS_NAME.parameterizedBy(
+                model.className,
+                basicFieldContentType
+            )
+            modelExpressionContainerClass.addProperty(
+                PropertySpec.builder(field.name, fieldExpressionType)
+                    .initializer("%T(%T, this.%N, %T.%N)", fieldExpressionType, ctx.entityCompanionName, "_alias", model.className, field.name)
+                    .build()
+            )
+        }
     }
 
 }

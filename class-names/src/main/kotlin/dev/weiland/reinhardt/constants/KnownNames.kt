@@ -7,6 +7,7 @@ public object KnownNames {
     public const val MODEL_ANNOTATION: String = "dev.weiland.reinhardt.ModelAnnotation"
 
     private const val MODEL_PACKAGE: String = "dev.weiland.reinhardt.model"
+    private const val EXPR_PACKAGE: String = "dev.weiland.reinhardt.expr"
     public val FIELD_CLASS_NAME: ClassName = ClassName(MODEL_PACKAGE, "Field")
     public val MODEL_CLASS_NAME: ClassName = ClassName(MODEL_PACKAGE, "Model")
 
@@ -24,6 +25,12 @@ public object KnownNames {
 
     public const val MODEL_COMPANION_ENTITY_READER_VAL: String = "entityReader"
     public const val MODEL_COMPANION_MODEL_VAL: String = "model"
+
+    public val MODEL_EXPRESSION_CONTAINER_CLASS_NAME: ClassName = ClassName(EXPR_PACKAGE, "ModelExpressionContainer")
+    public const val MODEL_EXPRESSION_CONTAINER_ALIAS_PARAMETER: String = "alias"
+    public const val MODEL_EXPRESSION_CONTAINER_ALIAS: String = "alias"
+
+    public val FIELD_EXPRESSION_CLASS_NAME: ClassName = ClassName(EXPR_PACKAGE, "FieldExpression")
 
     private fun modelClassDerivedName(modelClassName: ClassName, prefix: String = "", postfix: String = ""): ClassName {
         return modelClassName.peerClass(modelClassName.simpleNames.joinToString(separator = "_", prefix = prefix, postfix = postfix))

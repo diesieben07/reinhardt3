@@ -49,6 +49,31 @@ public class ModelCodegen(
 
         val entityReaderClassName = model.className.peerClass(model.className.simpleName + "EntityR")
 
+        val modelExpressionContainerClassName = model.className.peerClass(model.className.simpleName + "Ref")
+        val modelExpressionContainerClass = TypeSpec.classBuilder(modelExpressionContainerClassName)
+            .addModifiers(KModifier.PRIVATE)
+            .addSuperinterface(KnownNames.MODEL_EXPRESSION_CONTAINER_CLASS_NAME)
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter(
+                        KnownNames.MODEL_EXPRESSION_CONTAINER_ALIAS_PARAMETER,
+                        STRING,
+                    )
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("_alias", STRING, KModifier.PRIVATE)
+                    .initializer("%N", KnownNames.MODEL_EXPRESSION_CONTAINER_ALIAS_PARAMETER)
+                    .build()
+            )
+            .addFunction(
+                FunSpec.builder(KnownNames.MODEL_EXPRESSION_CONTAINER_ALIAS)
+                    .returns(STRING)
+                    .addModifiers(KModifier.OVERRIDE, KModifier.FINAL)
+                    .addCode("return this.%N", "_alias")
+                    .build()
+            )
+
         val entityReaderGenericType = modelReaderClassName.parameterizedBy(model.className, entityInterfaceClassName)
         val modelCompanionGenericType = modelCompanionClassName.parameterizedBy(model.className, entityInterfaceClassName)
         val modelCompanionClass = TypeSpec.objectBuilder(entityReaderClassName)
@@ -79,7 +104,9 @@ public class ModelCodegen(
             entityCompanionName = entityReaderClassName, entityCompanion = modelCompanionClass,
             entityReaderReadNullableFun = entityReaderReadFun,
             entityClassCallParams = mutableListOf(),
-            entityReaderReadPKNullableFun = null
+            entityReaderReadPKNullableFun = null,
+            modelExpressionContainerClassName = modelExpressionContainerClassName,
+            modelExpressionContainerClass = modelExpressionContainerClass
         )
 
         var foundPk: FieldCodegen? = null
@@ -185,6 +212,7 @@ public class ModelCodegen(
             .build()
 
 //        file.addFunction(primaryKeyFun.build())
+        file.addType(modelExpressionContainerClass.build())
         file.addType(entityInterface.build())
         file.addType(entityClass.build())
         file.addType(modelCompanionClass.build())
