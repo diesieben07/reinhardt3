@@ -20,6 +20,10 @@ public object KnownNames {
     private const val ENTITY_LAZY_PREFIX = "L"
 
     public const val MODEL_COMPANION_FUN: String = "objects"
+    public const val ENTITY_READER_FUN: String = "entityReader"
+
+    public const val MODEL_COMPANION_ENTITY_READER_VAL: String = "entityReader"
+    public const val MODEL_COMPANION_MODEL_VAL: String = "model"
 
     private fun modelClassDerivedName(modelClassName: ClassName, prefix: String = "", postfix: String = ""): ClassName {
         return modelClassName.peerClass(modelClassName.simpleNames.joinToString(separator = "_", prefix = prefix, postfix = postfix))

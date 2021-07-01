@@ -52,6 +52,7 @@ public class ModelCodegen(
         val entityReaderGenericType = modelReaderClassName.parameterizedBy(model.className, entityInterfaceClassName)
         val modelCompanionGenericType = modelCompanionClassName.parameterizedBy(model.className, entityInterfaceClassName)
         val modelCompanionClass = TypeSpec.objectBuilder(entityReaderClassName)
+            .addModifiers(KModifier.PRIVATE)
             .addSuperinterface(modelCompanionGenericType)
             .addSuperinterface(entityReaderGenericType)
 
@@ -85,7 +86,7 @@ public class ModelCodegen(
         for (fieldGen in fieldGens) {
             val primaryKeyType = fieldGen.primaryKeyType
             if (primaryKeyType != null) {
-                check(foundPk == null) { "Duplicate primary key for model $model"}
+                check(foundPk == null) { "Duplicate primary key for model $model" }
                 foundPk = fieldGen
 
                 val entityReaderReadPKNullableFun = FunSpec.builder(modelReaderReadPKNullable)
@@ -140,6 +141,34 @@ public class ModelCodegen(
         entityReaderReadFun.addCode(")")
 
         modelCompanionClass.addFunction(entityReaderReadFun.build())
+
+        modelCompanionClass.addProperty(
+            PropertySpec.builder(
+                KnownNames.MODEL_COMPANION_ENTITY_READER_VAL,
+                selectedEntityReaderSupertype,
+                KModifier.OVERRIDE
+            )
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addCode("return this")
+                        .build()
+                )
+                .build()
+        )
+
+        modelCompanionClass.addProperty(
+            PropertySpec.builder(
+                KnownNames.MODEL_COMPANION_MODEL_VAL,
+                model.className,
+                KModifier.OVERRIDE
+            )
+                .getter(
+                    FunSpec.getterBuilder()
+                        .addCode("return %T", model.className)
+                        .build()
+                )
+                .build()
+        )
 
         entityClass.primaryConstructor(entityClassConstructor.build())
 

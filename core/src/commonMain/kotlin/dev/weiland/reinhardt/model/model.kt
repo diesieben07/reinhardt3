@@ -31,7 +31,7 @@ public interface ModelReader<M : Model, R : Any> {
     public fun readEntityNullable(database: Database, row: DbRow, columnPrefix: String): R?
 }
 
-public interface ModelReaderWithPK<M : Model, R : Any, PK : Any> {
+public interface ModelReaderWithPK<M : Model, R : Any, PK : Any> : ModelReader<M, R> {
 
     public fun readPrimaryKey(database: Database, row: DbRow, columnPrefix: String): PK {
         return checkNotNull(readPrimaryKeyNullable(database, row, columnPrefix)) {
@@ -43,10 +43,14 @@ public interface ModelReaderWithPK<M : Model, R : Any, PK : Any> {
 }
 
 
-public interface ModelCompanion<M : Model, E : Any> : ModelReader<M, E>
+public interface ModelCompanion<M : Model, E : Any> {
+    public val model: M
+    public val entityReader: ModelReader<M, E>
+}
 
-public interface ModelCompanionWithPK<M : Model, E : Any, PK : Any> : ModelCompanion<M, E>, ModelReaderWithPK<M, E, PK> {
+public interface ModelCompanionWithPK<M : Model, E : Any, PK : Any> : ModelCompanion<M, E> {
     public val primaryKeyField: BasicField<PK>?
+    public override val entityReader: ModelReaderWithPK<M, E, PK>
 }
 
 
