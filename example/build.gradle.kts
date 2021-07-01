@@ -1,7 +1,8 @@
+import dev.weiland.reinhardt.build.addGeneratedSource
 import dev.weiland.reinhardt.build.configureKotlinReinhardt
 
 plugins {
-    id("com.google.devtools.ksp") version "1.5.10-1.0.0-beta01"
+    id("com.google.devtools.ksp")
     kotlin("jvm")
     idea
 }
@@ -34,10 +35,4 @@ dependencies {
 //}
 
 kotlin.configureKotlinReinhardt(false)
-
-idea {
-    module {
-        sourceDirs = sourceDirs + file("build/generated/ksp/main/kotlin/")
-        generatedSourceDirs = generatedSourceDirs + file("build/generated/ksp/main/kotlin/")
-    }
-}
+idea.addGeneratedSource("build/generated/ksp/main/kotlin/")

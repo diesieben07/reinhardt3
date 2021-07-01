@@ -12,6 +12,7 @@ include("ksp-processor")
 
 pluginManagement {
     val kotlinVersion: String by settings
+    val kspVersion: String by settings
 
     repositories {
         gradlePluginPortal()
@@ -22,5 +23,6 @@ pluginManagement {
         kotlin("multiplatform") version kotlinVersion apply false
         kotlin("jvm")version kotlinVersion apply false
         kotlin("plugin.serialization") version kotlinVersion apply false
+        id("com.google.devtools.ksp") version kspVersion apply false
     }
 }

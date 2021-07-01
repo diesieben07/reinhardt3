@@ -4,6 +4,7 @@ import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.kotlin.dsl.getValue
 import org.gradle.kotlin.dsl.getting
 import org.gradle.kotlin.dsl.invoke
+import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
@@ -56,5 +57,12 @@ fun KotlinMultiplatformExtension.configureKotlinReinhardt(isPublic: Boolean = tr
                 implementation(kotlin("stdlib"))
             }
         }
+    }
+}
+
+fun IdeaModel.addGeneratedSource(fileName: String) {
+    module {
+        sourceDirs = sourceDirs + project.file(fileName)
+        generatedSourceDirs = generatedSourceDirs + project.file(fileName)
     }
 }
