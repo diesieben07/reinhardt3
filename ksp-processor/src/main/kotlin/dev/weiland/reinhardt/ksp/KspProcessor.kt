@@ -23,13 +23,29 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
 
         environment.logger.warn("Processor is running")
 
+        val writerLazy = lazy {
+            environment.codeGenerator.createNewFile(
+                dependencies = Dependencies.ALL_FILES,
+                "foo",
+                "output.dummy",
+                extensionName = "txt"
+            ).bufferedWriter()
+        }
+        val writer by writerLazy
+
         for (file in resolver.getNewFiles()) {
             environment.logger.warn("File: ${file.filePath}")
             for (cls in file.declarations.filterIsInstance<KSClassDeclaration>()) {
                 if (modelType.isAssignableFrom(cls.asStarProjectedType())) {
+                    writer.write(ModelInfoFromKspResolver(resolver).makeModelInfoFromKsp(cls).toString())
+                    writer.newLine()
                     ModelGenerator(environment, resolver, cls, CodegenTargetImpl(file)).run()
                 }
             }
+        }
+
+        if (writerLazy.isInitialized()) {
+            writer.close()
         }
 
         return emptyList()

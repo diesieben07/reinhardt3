@@ -95,7 +95,7 @@ val db: Database get() = TODO()
 fun main() {
     println(User.objects())
     println(User.getModelCompanion())
-    User.objects().all().addFilter()
+//    User.objects().all().addFilter()
 //    val e: UserEntity = TODO()
 //    print(ServiceLoader.load(SymbolProcessorProvider::class.java).toList())
 }

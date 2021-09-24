@@ -9,6 +9,8 @@ public object KnownNames {
     private const val MODEL_PACKAGE: String = "dev.weiland.reinhardt.model"
     private const val EXPR_PACKAGE: String = "dev.weiland.reinhardt.expr"
     public val FIELD_CLASS_NAME: ClassName = ClassName(MODEL_PACKAGE, "Field")
+    public val BASIC_FIELD_CLASS_NAME: ClassName = ClassName(MODEL_PACKAGE, "BasicField")
+    public val BASIC_FIELD_FROM_DB_FUN: String = "fromDb"
     public val MODEL_CLASS_NAME: ClassName = ClassName(MODEL_PACKAGE, "Model")
 
     public val MODEL_REF_CLASS_NAME: ClassName = ClassName(MODEL_PACKAGE, "ModelRef")

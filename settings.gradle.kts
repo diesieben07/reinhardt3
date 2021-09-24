@@ -12,6 +12,7 @@ include("model-state")
 include("class-names")
 include("jdbc")
 include("ksp-processor")
+include("model")
 
 pluginManagement {
     val kotlinVersion: String by settings
@@ -35,7 +36,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         val kspVersion: String by settings
 
-        val libs by creating {
+        create("libs") {
             version("asm", "9.2")
             version("autoService", "1.0")
             version("kotlinxCoroutines", "1.5.2")

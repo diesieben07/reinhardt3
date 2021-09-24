@@ -17,6 +17,7 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":class-names"))
     implementation(project(":generator"))
+    implementation(project(":model"))
     implementation(libs.ksp)
     implementation(libs.autoService.annotations)
     kapt(libs.autoService.processor)
