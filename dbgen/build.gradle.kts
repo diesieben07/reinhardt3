@@ -13,8 +13,8 @@ repositories {
 kotlin {
     sourceSets {
         all {
-            languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
-            languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
+            languageSettings.optIn("kotlin.RequiresOptIn")
+            languageSettings.optIn("kotlin.ExperimentalStdlibApi")
         }
         main {
             resources.srcDir("src/main/generated")
@@ -37,7 +37,7 @@ dependencies {
     implementation(kotlin("reflect"))
 //    api(project(":core"))
 
-    implementation("com.squareup:kotlinpoet:1.7.2")
+    implementation(libs.kotlinpoet.core)
     implementation("org.postgresql:postgresql:42.2.18")
     implementation("us.fatehi:schemacrawler:16.11.7")
     implementation("us.fatehi:schemacrawler-postgresql:16.11.7")

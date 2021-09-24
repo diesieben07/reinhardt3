@@ -1,14 +1,8 @@
 package dev.weiland.reinhardt.example
 
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import dev.weiland.reinhardt.db.Database
-import dev.weiland.reinhardt.db.DbRow
+import dev.weiland.reinhardt.db.all
 import dev.weiland.reinhardt.model.*
-import kotlinx.coroutines.*
-import java.math.BigDecimal
-import java.math.RoundingMode
-import java.util.*
-import kotlin.reflect.KClass
 import kotlin.time.*
 
 
@@ -94,10 +88,14 @@ object Test : Model() {
 //    }
 //}
 //
+
+val db: Database get() = TODO()
+
 @OptIn(ExperimentalTime::class)
 fun main() {
     println(User.objects())
     println(User.getModelCompanion())
+    User.objects().all().addFilter()
 //    val e: UserEntity = TODO()
 //    print(ServiceLoader.load(SymbolProcessorProvider::class.java).toList())
 }

@@ -8,32 +8,12 @@ import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
-val kotlinPoetVersion = "1.7.2"
-val serializationVersion = "1.1.0"
-val coroutinesVersion = "1.5.0"
-
-fun DependencyHandler.kotlinPoet(module: String? = null, version: String = kotlinPoetVersion): String {
-    return buildString {
-        append("com.squareup:kotlinpoet")
-        if (module != null) {
-            append("-")
-            append(module)
-        }
-        append(":")
-        append(version)
-    }
-}
-
-fun DependencyHandler.kotlinxSerialization(module: String, version: String = serializationVersion): String {
-    return "org.jetbrains.kotlinx:kotlinx-serialization-$module:$version"
-}
-
 fun KotlinProjectExtension.configureKotlinReinhardt(isPublic: Boolean = true) {
     sourceSets.all {
-        languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
-        languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
-        languageSettings.useExperimentalAnnotation("dev.weiland.reinhardt.ReinhardtInternalApi")
-        languageSettings.useExperimentalAnnotation("com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview")
+        languageSettings.optIn("kotlin.RequiresOptIn")
+        languageSettings.optIn("kotlin.ExperimentalStdlibApi")
+        languageSettings.optIn("dev.weiland.reinhardt.ReinhardtInternalApi")
+        languageSettings.optIn("com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview")
     }
 
     if (isPublic) {

@@ -13,5 +13,8 @@ internal class JdbcDbRowImpl(override val resultSet: ResultSet) : JdbcDbRow, DbR
     override fun wasNull(column: String): Boolean = resultSet.wasNull()
 
     override fun next(): Boolean = resultSet.next()
+    override fun getBoolean(column: String): Boolean {
+        TODO("Not yet implemented")
+    }
 
 }

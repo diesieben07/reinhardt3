@@ -11,7 +11,6 @@ repositories {
     mavenCentral()
 }
 
-val autoServiceVersion = "1.0-rc7"
 kotlin {
     jvm() {
 
@@ -19,8 +18,8 @@ kotlin {
 
     sourceSets {
         all {
-            languageSettings.useExperimentalAnnotation("kotlin.RequiresOptIn")
-            languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
+            languageSettings.optIn("kotlin.RequiresOptIn")
+            languageSettings.optIn("kotlin.ExperimentalStdlibApi")
         }
 
         val commonMain by getting {
@@ -31,7 +30,7 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("com.google.auto.service:auto-service-annotations:$autoServiceVersion")
+                implementation(libs.autoService.annotations)
                 implementation("us.fatehi:schemacrawler:16.11.7")
             }
         }
@@ -39,5 +38,5 @@ kotlin {
 }
 
 dependencies {
-    add("kapt", "com.google.auto.service:auto-service:$autoServiceVersion")
+    add("kapt", libs.autoService.processor)
 }

@@ -1,5 +1,4 @@
 import dev.weiland.reinhardt.build.configureKotlinReinhardt
-import dev.weiland.reinhardt.build.kotlinPoet
 
 plugins {
     kotlin("jvm")
@@ -13,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlinPoet())
+    implementation(libs.kotlinpoet.core)
 }
 
 kotlin.configureKotlinReinhardt()

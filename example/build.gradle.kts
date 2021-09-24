@@ -25,7 +25,7 @@ dependencies {
 //    implementation(kotlinxSerialization("json"))
 
 //    implementation(project(":ksp-processor"))
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.5.10-1.0.0-beta01")
+    implementation(libs.ksp)
     implementation(project(":ksp-processor"))
     ksp(project(":ksp-processor"))
 }

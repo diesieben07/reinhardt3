@@ -1,5 +1,4 @@
 import dev.weiland.reinhardt.build.configureKotlinReinhardt
-import dev.weiland.reinhardt.build.kotlinPoet
 
 plugins {
     kotlin("jvm")
@@ -15,18 +14,23 @@ repositories {
     google()
 }
 
+val kotlinPoetVersion: String by project
+
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":class-names"))
     implementation(project(":model-state"))
 
-    api(kotlinPoet())
-    implementation(kotlinPoet("metadata"))
-    implementation(kotlinPoet("metadata-specs"))
-    implementation(kotlinPoet("classinspector-reflective"))
+//    api("com.squareup:kotlinpoet:$kotlinPoetVersion")
+//    implementation("com.squareup:kotlinpoet-metadata:$kotlinPoetVersion")
+//    implementation("com.squareup:kotlinpoet-metadata-specs:$kotlinPoetVersion")
+//    implementation("com.squareup:kotlinpoet-classinspector-reflective:$kotlinPoetVersion")
 
-    implementation("com.google.auto.service:auto-service-annotations:1.0")
-    kapt("com.google.auto.service:auto-service:1.0")
+
+    implementation(libs.bundles.kotlinpoet)
+
+    implementation(libs.autoService.annotations)
+    kapt(libs.autoService.processor)
 }
 
 kotlin.configureKotlinReinhardt(isPublic = true)
