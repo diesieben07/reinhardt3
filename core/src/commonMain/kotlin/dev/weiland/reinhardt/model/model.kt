@@ -3,6 +3,7 @@ package dev.weiland.reinhardt.model
 import dev.weiland.reinhardt.ReinhardtInternalApi
 import dev.weiland.reinhardt.db.Database
 import dev.weiland.reinhardt.db.DbRow
+import dev.weiland.reinhardt.expr.ModelExpressionContainer
 
 @Retention(AnnotationRetention.BINARY)
 @Target(AnnotationTarget.CLASS)
@@ -43,12 +44,13 @@ public interface ModelReaderWithPK<M : Model, R : Any, PK : Any> : ModelReader<M
 }
 
 
-public interface ModelCompanion<M : Model, E : Any> {
+public interface ModelCompanion<M : Model, E : Any, REF : ModelExpressionContainer> {
     public val model: M
     public val entityReader: ModelReader<M, E>
+    public fun ref(alias: String = ""): REF
 }
 
-public interface ModelCompanionWithPK<M : Model, E : Any, PK : Any> : ModelCompanion<M, E> {
+public interface ModelCompanionWithPK<M : Model, E : Any, REF : ModelExpressionContainer, PK : Any> : ModelCompanion<M, E, REF> {
     public val primaryKeyField: BasicField<PK>?
     public override val entityReader: ModelReaderWithPK<M, E, PK>
 }

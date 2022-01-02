@@ -1,7 +1,5 @@
 package dev.weiland.reinhardt.dbgen
 
-import java.util.*
-
 class DefaultNameTransformer : NameTransformer {
 
     private companion object {
@@ -11,8 +9,8 @@ class DefaultNameTransformer : NameTransformer {
     override fun getName(external: String, capitalize: Boolean): String {
         return external.split(theMagicRegex)
             .mapIndexed { index, part ->
-                part.toLowerCase(Locale.ENGLISH).let { str ->
-                    if (capitalize || index > 0) str.capitalize(Locale.ENGLISH) else str
+                part.lowercase().let { str ->
+                    if (capitalize || index > 0) str.replaceFirstChar { it.uppercase() } else str
                 }
             }
             .joinToString(separator = "")

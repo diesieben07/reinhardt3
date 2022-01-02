@@ -6,7 +6,7 @@ import dev.weiland.reinhardt.model.Model
 import dev.weiland.reinhardt.model.ModelCompanion
 
 public data class FieldExpression<M : Model, T>(
-    val model: ModelCompanion<M, *>,
+    val model: ModelCompanion<M, *, *>,
     val modelAlias: String,
     val field: BasicField<T>
 ) : Expression<T> {

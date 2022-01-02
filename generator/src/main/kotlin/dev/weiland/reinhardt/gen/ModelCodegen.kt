@@ -51,7 +51,6 @@ public class ModelCodegen(
 
         val modelExpressionContainerClassName = model.className.peerClass(model.className.simpleName + "Ref")
         val modelExpressionContainerClass = TypeSpec.classBuilder(modelExpressionContainerClassName)
-            .addModifiers(KModifier.PRIVATE)
             .addSuperinterface(KnownNames.MODEL_EXPRESSION_CONTAINER_CLASS_NAME)
             .primaryConstructor(
                 FunSpec.constructorBuilder()
@@ -75,7 +74,7 @@ public class ModelCodegen(
             )
 
         val entityReaderGenericType = modelReaderClassName.parameterizedBy(model.className, entityInterfaceClassName)
-        val modelCompanionGenericType = modelCompanionClassName.parameterizedBy(model.className, entityInterfaceClassName)
+        val modelCompanionGenericType = modelCompanionClassName.parameterizedBy(model.className, entityInterfaceClassName, modelExpressionContainerClassName)
         val modelCompanionClass = TypeSpec.objectBuilder(entityReaderClassName)
             .addModifiers(KModifier.PRIVATE)
             .addSuperinterface(modelCompanionGenericType)
@@ -134,7 +133,7 @@ public class ModelCodegen(
                 model.className, entityInterfaceClassName, primaryKeyType
             )
             val modelCompanionGenericTypeWithPK = modelCompanionWithPkClassName.parameterizedBy(
-                model.className, entityInterfaceClassName, primaryKeyType
+                model.className, entityInterfaceClassName, modelExpressionContainerClassName, primaryKeyType
             )
             modelCompanionClass
                 .addSuperinterface(modelCompanionGenericTypeWithPK)
@@ -193,6 +192,16 @@ public class ModelCodegen(
                     FunSpec.getterBuilder()
                         .addCode("return %T", model.className)
                         .build()
+                )
+                .build()
+        )
+
+        modelCompanionClass.addFunction(
+            FunSpec.builder("ref")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("alias", STRING)
+                .addCode(
+                    "return %T(alias)", modelExpressionContainerClassName
                 )
                 .build()
         )

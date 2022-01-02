@@ -61,8 +61,8 @@ internal class ForeignKeyFieldCodegen(
                 ParameterSpec(field.name, relEntityMaybeNull)
             )
             ctx.entityReaderReadNullableFun.addCode(
-                "val %N = %T.%N().%N.%N(database, row, columnPrefix + %S)\n",
-                field.name, relatedFieldModel, KnownNames.MODEL_COMPANION_FUN, KnownNames.MODEL_COMPANION_ENTITY_READER_VAL,
+                "val %N = %T.%N().%N(database, row, columnPrefix + %S)\n",
+                field.name, relatedFieldModel, KnownNames.ENTITY_READER_FUN,
                 if (nullable) "readEntityNullable" else "readEntity", field.name + "_",
             )
             ctx.entityClassCallParams += CodeBlock.of("%N", field.name)
@@ -78,8 +78,8 @@ internal class ForeignKeyFieldCodegen(
             )
 
             ctx.entityReaderReadNullableFun.addCode(
-                "val %N = %T.%N().%N.%N(database, row, columnPrefix + %S)\n",
-                field.name, relatedFieldModel, KnownNames.MODEL_COMPANION_FUN, KnownNames.MODEL_COMPANION_ENTITY_READER_VAL,
+                "val %N = %T.%N().%N(database, row, columnPrefix + %S)\n",
+                field.name, relatedFieldModel, KnownNames.ENTITY_READER_FUN,
                 if (nullable) "readPrimaryKeyNullable" else "readPrimaryKey", field.name + "_"
             )
             ctx.entityClassCallParams += CodeBlock.of("%N", field.name)

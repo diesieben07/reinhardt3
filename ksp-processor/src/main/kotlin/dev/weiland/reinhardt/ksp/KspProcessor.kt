@@ -133,7 +133,7 @@ internal class KspProcessor(private val environment: SymbolProcessorEnvironment)
                     val propertyClass = resolver.getClassDeclarationByName(propertyClassName.toKSName()) ?: return null
                     return if (propertyClass.asStarProjectedType().isAssignableFrom(fieldResolvedType)) {
                         val lookupProperty = propertyClass.getDeclaredProperties().single { it.simpleName.getShortName() == propertyName }
-                        lookupProperty.asMemberOf(fieldResolvedType).toKotlinPoet()
+                        lookupProperty.asMemberOf(fieldResolvedType).toKotlinPoetType()
                     } else {
                         null
                     }

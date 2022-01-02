@@ -2,6 +2,8 @@ package dev.weiland.reinhardt.example
 
 import dev.weiland.reinhardt.db.Database
 import dev.weiland.reinhardt.db.all
+import dev.weiland.reinhardt.db.filter
+import dev.weiland.reinhardt.expr.eq
 import dev.weiland.reinhardt.model.*
 import kotlin.time.*
 
@@ -95,6 +97,7 @@ val db: Database get() = TODO()
 fun main() {
     println(User.objects())
     println(User.getModelCompanion())
+//    User.objects().all().filter { id eq  }
 //    User.objects().all().addFilter()
 //    val e: UserEntity = TODO()
 //    print(ServiceLoader.load(SymbolProcessorProvider::class.java).toList())
